@@ -1,4 +1,4 @@
-package mip.run;
+package bmr.run;
 
 import mip.model.data.image.MR;
 import java.io.File;
