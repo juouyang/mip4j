@@ -12,7 +12,7 @@ import mip.model.data.image.MR;
 import mip.util.ImageJUtils;
 
 public class MRSeries {
-
+    private final static int CORES = Runtime.getRuntime().availableProcessors();
     private MR[] imageArrayXY;
     private String seriesNumber;
 
@@ -20,7 +20,7 @@ public class MRSeries {
         imageArrayXY = new MR[dcmFiles.length];
 
         CountDownLatch latch = new CountDownLatch(dcmFiles.length);
-        ExecutorService e = Executors.newFixedThreadPool(8);
+        ExecutorService e = Executors.newFixedThreadPool(CORES);
 
         for (int i = 0; i < dcmFiles.length; i++) {
             e.execute(new ImportRunnable(latch, dcmFiles[i], i, imageArrayXY));

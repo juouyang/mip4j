@@ -9,6 +9,7 @@ import mip.util.IOUtils;
 import mip.util.ROIUtils;
 import ij.io.Opener;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import mip.util.Timer;
 
@@ -22,7 +23,7 @@ public class BMRStudy {
     MRSeries mrs4;
     ArrayList<Roi> roi;
 
-    public BMRStudy(String studyRoot) {
+    public BMRStudy(Path studyRoot) {
         Timer t = new Timer();
         read_dicom_files(studyRoot);
 
@@ -32,12 +33,17 @@ public class BMRStudy {
         t.printElapsedTime("BMRStudy");
     }
 
-    private boolean read_dicom_files(String studyRoot) {
+    private boolean read_dicom_files(Path studyRoot) {
+        if (!studyRoot.toFile().isDirectory()) return false;
+        if (Files.notExists(studyRoot.resolve("2"))) return false;
+        if (Files.notExists(studyRoot.resolve("3"))) return false;
+        if (Files.notExists(studyRoot.resolve("4"))) return false;
+        
         ArrayList<String> t0 = new ArrayList<>();
         ArrayList<String> t1 = new ArrayList<>();
         ArrayList<String> t2 = new ArrayList<>();
-
-        ArrayList<Path> allFileNames = IOUtils.listFiles(studyRoot);
+        
+        ArrayList<Path> allFileNames = IOUtils.listFiles(studyRoot.toString());
 
         for (Path fn : allFileNames) {
             if (fn.getParent().endsWith("2")) {

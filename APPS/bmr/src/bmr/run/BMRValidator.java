@@ -8,16 +8,17 @@ package bmr.run;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
-import mip.model.data.image.MR;
+import mip.model.data.bmr.BMRStudy;
 import mip.util.IOUtils;
 
 /**
  *
  * @author ju
  */
-public class DicomValidator {
+public class BMRValidator {
 
     public static void main(String[] args) {
+        
         final HashSet<Path> studies = new HashSet<>();
 
         for (Path fn : IOUtils.listFiles(args[0])) { // TODO commons-cli
@@ -26,10 +27,9 @@ public class DicomValidator {
                 if (!studies.contains(studyRoot)) {
                     studies.add(studyRoot);
                     System.out.println(studyRoot); // TODO log4j
+                    BMRStudy mrs = new BMRStudy(studyRoot);
                 }
-
-                MR mr = new MR(fn.toString());
-            } catch (IOException ex) {
+            } catch (Throwable ex) {
                 System.err.println(ex); // TODO log4j
             }
         }

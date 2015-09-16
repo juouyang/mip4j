@@ -14,6 +14,7 @@ import mip.model.data.bmr.BMRStudy;
 import mip.util.IOUtils;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
@@ -36,7 +37,7 @@ public class SingleStudy {
         ij.exitWhenQuitting(true);
 
         try {
-            final BMRStudy mrStudy = new BMRStudy(studyRoot);
+            final BMRStudy mrStudy = new BMRStudy(Paths.get(studyRoot));
             if (roiFile != null) {
                 mrStudy.addROI(roiFile);
             }

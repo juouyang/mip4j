@@ -6,6 +6,7 @@ import ij.ImagePlus;
 import ij.io.FileSaver;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -46,7 +47,7 @@ public class MultipleStudy {
             try {
                 final String studyRoot = dcmRoot + "\\" + hospital + "\\" + study_id;
                 final String roiFile = roiRoot + "\\" + hospital + "\\" + study_id + ".zip";
-                final BMRStudy mrStudy = new BMRStudy(studyRoot);
+                final BMRStudy mrStudy = new BMRStudy(Paths.get(studyRoot));
                 mrStudy.addROI(roiFile);
                 final ColorMapping cm = new ColorMapping(mrStudy);
                 final ImagePlus imp = cm.imp;
