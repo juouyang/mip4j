@@ -12,6 +12,7 @@ import mip.model.data.image.MR;
 import mip.util.ImageJUtils;
 
 public class MRSeries {
+
     private final static int CORES = Runtime.getRuntime().availableProcessors();
     private MR[] imageArrayXY;
     private String seriesNumber;
@@ -35,8 +36,7 @@ public class MRSeries {
                 if (!imageArrayXY[i].getSeriesNumber().equalsIgnoreCase(seriesNumber)) {
                     throw new IllegalArgumentException("The input dicom files contain more than one series.\n\t");
                 }
-            } catch (NullPointerException ex) {
-                System.err.println(ex); // TODO log4j
+            } catch (NullPointerException ignore) {
             }
         }
     }
@@ -99,8 +99,7 @@ final class ImportRunnable implements Runnable {
     private void doWork() {
         try {
             outputArray[outputNumber] = new MR(inputFile);
-        } catch (IOException ex) { 
-            System.err.println(ex); // TODO log4j
+        } catch (IOException ignore) {
         }
     }
 }

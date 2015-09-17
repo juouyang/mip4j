@@ -2,12 +2,12 @@ package bmr.run;
 
 import mip.model.data.bmr.BMRStudy;
 import mip.model.data.bmr.ColorMapping;
-import ij.ImagePlus;
-import ij.io.FileSaver;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import mip.util.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -23,47 +23,54 @@ public class MultipleStudy {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        final String dcmRoot = args[0]; // TODO commons-cli
+        final String dcmRoot = args[0];
         final String roiRoot = args[1];
-        File file = new File(args[2]);
-        List<String> lines = FileUtils.readLines(file, "UTF-8");
+        File siList = new File(args[2]);
+        List<String> lines = FileUtils.readLines(siList, "UTF-8");
 
-        StringBuilder result = new StringBuilder();
-        File resultFile = new File(dcmRoot + "/result.txt");
-        result.append("PID\\SID\tWashout\tPlateau\tPersistent\tEnhanced\tRoi\n");
+        StringBuilder multiResult = new StringBuilder();
+        multiResult.append("PID\\SID\tWashout\tPlateau\tPersistent\tEnhanced\tRoi\n");
 
         for (String s : lines) {
-            System.out.println(s); // TODO log4j
+            System.out.println(s);
             String[] split = s.split("\t");
-            assert (split.length == 2);
+            if (split.length != 2) {
+                System.err.println("hospital-SI list: string split error");
+                continue;
+            }
 
-            String hospital = "_";
-            String study_id = "_";
+            String hospital;
+            String study_id;
             if (StringUtils.isNumeric(split[1])) {
                 hospital = split[0];
                 study_id = split[1];
+            } else {
+                System.err.println("hospital-SI list: SI isNumeric error");
+                continue;
             }
 
-            try {
-                final String studyRoot = dcmRoot + "\\" + hospital + "\\" + study_id;
-                final String roiFile = roiRoot + "\\" + hospital + "\\" + study_id + ".zip";
-                final BMRStudy mrStudy = new BMRStudy(Paths.get(studyRoot));
-                mrStudy.addROI(roiFile);
-                final ColorMapping cm = new ColorMapping(mrStudy);
-                final ImagePlus imp = cm.imp;
-                FileSaver fs = new FileSaver(imp);
-                fs.saveAsTiffStack(studyRoot + "/cm.tif");
-                FileUtils.writeStringToFile(new File(studyRoot + "/result.txt"), cm.result.toString());
-                result.append(mrStudy.patientID).append("\\").append(mrStudy.studyID).append("\t");
-                result.append(cm.washoutTotal).append("\t").append(cm.plateauTotal).append("\t").append(cm.persistentTotal).append("\t").append(cm.enhancedTotal).append("\t").append(cm.roiTotal).append("\n");
-                System.out.println(cm.result.toString()); // TODO log4j
-            } catch (IOException ex) {
-                // TODO log4j
+            final Path studyRoot = Paths.get(dcmRoot + "\\" + hospital + "\\" + study_id);
+            final String roiFile = roiRoot + "\\" + hospital + "\\" + study_id + ".zip";
+            if (!IOUtils.fileExisted(roiFile)) {
+                continue;
             }
-            FileUtils.writeStringToFile(resultFile, result.toString());
-            System.out.println(result.toString()); // TODO log4j
+
+            final BMRStudy mrStudy = new BMRStudy(studyRoot);
+            final ColorMapping cm = new ColorMapping(mrStudy, roiFile);
+
+            if (cm.hasROI()) {
+                multiResult.append(mrStudy.patientID).append("\\");
+                multiResult.append(mrStudy.studyID).append("\t");
+                multiResult.append(cm.washoutTotal).append("\t");
+                multiResult.append(cm.plateauTotal).append("\t");
+                multiResult.append(cm.persistentTotal).append("\t");
+                multiResult.append(cm.enhancedTotal).append("\t");
+                multiResult.append(cm.roiTotal).append("\n");
+            }
         }
 
+        System.out.println(multiResult.toString());
+        FileUtils.writeStringToFile(new File(dcmRoot + "/multi_result.txt"), multiResult.toString());
         System.out.println("Press Any Key To Continue...");
         new java.util.Scanner(System.in).nextLine();
     }

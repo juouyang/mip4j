@@ -74,12 +74,9 @@ public class MR extends ShortImage {
                 windowCenter = Integer.parseInt(filter.ToString(new gdcm.Tag(0x0028, 0x1050)).trim());
                 windowWidth = Integer.parseInt(filter.ToString(new gdcm.Tag(0x0028, 0x1051)).trim());
                 patientID = filter.ToString(new gdcm.Tag(0x0010, 0x0020)).trim();
-            } catch (NumberFormatException ex) {
-                System.err.println(ex); // TODO log4j
+            } catch (NumberFormatException ignore) {
             }
-        } catch (IOException | IllegalArgumentException ex) {
-            System.err.println(ex); // TODO log4j
-            throw ex;
+        } catch (IOException | IllegalArgumentException ignore) {
         } finally {
             reader.delete();
             filter.delete();

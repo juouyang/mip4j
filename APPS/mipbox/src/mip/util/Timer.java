@@ -11,7 +11,7 @@ public class Timer {
     }
 
     public void printElapsedTime(String tag) {
-        System.out.println("[" + tag + "]\t" + format(getElapsedTime())); // TODO log4j
+        System.out.println("[" + tag + "]\t" + format(getElapsedTime()));
     }
 
     private double getElapsedTime() {

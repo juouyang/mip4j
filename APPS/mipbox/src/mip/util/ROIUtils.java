@@ -4,7 +4,6 @@ import ij.gui.Roi;
 import ij.io.RoiDecoder;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class ROIUtils {
     private ROIUtils() { // singleton
     }
 
-    public static List<Roi> uncompressROI(File zipFile) {
+    public static List<Roi> uncompressROI(String zipFile) {
         List<Roi> rois = new ArrayList<>();
 
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile))) {
@@ -52,23 +51,18 @@ public class ROIUtils {
             }
 
             zin.close();
-        } catch (IOException ex) {
-            System.err.println(ex); // TODO log4j
-        }
-
-        if (rois.isEmpty()) {
-            throw new IllegalArgumentException("This ZIP archive does not appear to contain \".roi\" files");
+        } catch (IOException ignore) {
         }
 
         return rois;
     }
 
-    public static ArrayList<Roi> filterROI(ArrayList<Roi> rois, int z_position) {
+    public static ArrayList<Roi> filterROI(List<Roi> rois, int z_position) {
         ArrayList<Roi> ret = new ArrayList<>();
         if (rois != null) {
-        	for (Roi r : rois) {
-            	if (r.getPosition() == z_position) {
-                	ret.add(r);
+            for (Roi r : rois) {
+                if (r.getPosition() == z_position) {
+                    ret.add(r);
                 }
             }
         }
@@ -76,7 +70,7 @@ public class ROIUtils {
         return ret;
     }
 
-    public static boolean withinROI(ArrayList<Roi> rois, int x, int y) {
+    public static boolean withinROI(List<Roi> rois, int x, int y) {
         for (Roi r : rois) {
             if (r.contains(x, y)) {
                 return true;

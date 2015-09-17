@@ -1,5 +1,6 @@
 package mip.util;
 
+import java.io.File;
 import java.io.IOException;
 import static java.nio.file.FileVisitResult.CONTINUE;
 
@@ -18,6 +19,15 @@ public class IOUtils {
 
     public static ArrayList<Path> listFiles(String dir) {
         return new FileVisitor(dir).getFiles();
+    }
+
+    public static boolean fileExisted(String filepath) {
+        try {
+            File f = new File(filepath);
+            return f.isFile() && f.exists();
+        } catch (Throwable ignore) {
+            return false;
+        }
     }
 }
 
@@ -54,15 +64,12 @@ class FileVisitor {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (Throwable ex) {
-            System.err.println(ex); // TODO log4j
+        } catch (Throwable ignore) {
         }
     }
 
     public ArrayList<Path> getFiles() {
-        Timer t = new Timer();
         walkFiles();
-        t.printElapsedTime("getFiles");
         return files;
     }
 }

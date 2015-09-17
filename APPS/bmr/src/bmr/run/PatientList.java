@@ -22,17 +22,17 @@ public class PatientList {
         final HashMap<String, String> table = new HashMap<>();
         final HashSet<Path> studies = new HashSet<>();
 
-        for (Path fn : IOUtils.listFiles(args[0])) { // TODO commons-cli
+        for (Path fn : IOUtils.listFiles(args[0])) {
             try {
                 Path studyRoot = fn.getParent().getParent(); // STUDY > SERIES > IMAGE
                 if (!studies.contains(studyRoot)) {
                     studies.add(studyRoot);
                     MR mr = new MR(fn.toString());
                     table.put(mr.getStudyID(), mr.getPatientID());
-                    // TODO log4j
+
                 }
             } catch (IOException ex) {
-                System.err.println(ex); // TODO log4j
+                System.err.println(ex);
             }
         }
 
@@ -43,7 +43,7 @@ public class PatientList {
             }
             FileUtils.writeStringToFile(new File(args[0] + "/pList.txt"), sb.toString());
         } catch (Throwable ex) {
-            System.err.println(ex); // TODO log4j
+            System.err.println(ex);
         }
     }
 }

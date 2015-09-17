@@ -1,62 +1,53 @@
 package mip.model.data.bmr;
 
-import ij.gui.Roi;
 import java.util.ArrayList;
 import java.util.Collections;
 import mip.model.data.series.MRSeries;
 import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
-import mip.util.ROIUtils;
-import ij.io.Opener;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import mip.util.Timer;
 
 public class BMRStudy {
 
+    public final String studyRoot;
     public final String patientID;
     public final String studyID;
     public final int numberOfFrames;
     MRSeries mrs2;
     MRSeries mrs3;
     MRSeries mrs4;
-    ArrayList<Roi> roi;
 
     public BMRStudy(Path studyRoot) {
         Timer t = new Timer();
+        this.studyRoot = studyRoot.toString();
         read_dicom_files(studyRoot);
-
         patientID = mrs2.getImageArrayXY()[0].getPatientID();
         studyID = mrs2.getImageArrayXY()[0].getStudyID();
         numberOfFrames = mrs2.getLength();
         t.printElapsedTime("BMRStudy");
     }
 
-    private boolean read_dicom_files(Path studyRoot) {
-        if (!studyRoot.toFile().isDirectory()) return false;
-        if (Files.notExists(studyRoot.resolve("2"))) return false;
-        if (Files.notExists(studyRoot.resolve("3"))) return false;
-        if (Files.notExists(studyRoot.resolve("4"))) return false;
-        
+    private void read_dicom_files(Path studyRoot) {
+        final Path p2 = studyRoot.resolve("2");
+        final Path p3 = studyRoot.resolve("3");
+        final Path p4 = studyRoot.resolve("4");
+        if (Files.notExists(p2) || Files.notExists(p3) || Files.notExists(p4)) {
+            throw new IllegalArgumentException("Missing series");
+        }
+
         ArrayList<String> t0 = new ArrayList<>();
         ArrayList<String> t1 = new ArrayList<>();
         ArrayList<String> t2 = new ArrayList<>();
-        
-        ArrayList<Path> allFileNames = IOUtils.listFiles(studyRoot.toString());
-
-        for (Path fn : allFileNames) {
-            if (fn.getParent().endsWith("2")) {
-                t0.add(fn.toString());
-            }
-        }
-
-        Collections.sort(t0, new AlphanumComparator());
-
         ArrayList<String> s3 = new ArrayList<>();
         ArrayList<String> s4 = new ArrayList<>();
         ArrayList<String> s5 = new ArrayList<>();
-        for (Path fn : allFileNames) {
+
+        for (Path fn : IOUtils.listFiles(studyRoot.toString())) {
+            if (fn.getParent().endsWith("2")) {
+                t0.add(fn.toString());
+            }
             if (fn.getParent().endsWith("3")) {
                 s3.add(fn.toString());
             }
@@ -78,9 +69,10 @@ public class BMRStudy {
             t1.addAll(s4);
             t2.addAll(s5);
         } else {
-            throw new IllegalArgumentException("Wrong number of files in Series 3, 4, 5");
+            throw new IllegalArgumentException("Unmatched frame-count of series");
         }
 
+        Collections.sort(t0, new AlphanumComparator());
         Collections.sort(t1, new AlphanumComparator());
         Collections.sort(t2, new AlphanumComparator());
 
@@ -88,19 +80,7 @@ public class BMRStudy {
             mrs2 = new MRSeries(t0.toArray(new String[t0.size()]));
             mrs3 = new MRSeries(t1.toArray(new String[t1.size()]));
             mrs4 = new MRSeries(t2.toArray(new String[t2.size()]));
-        } catch (InterruptedException ex) {
-            System.err.println(ex); // TODO log4j
-            System.exit(-1);
+        } catch (InterruptedException ignore) {
         }
-
-        return true;
-    }
-
-    public boolean addROI(String roiFile) {
-        if (roi == null) {
-            roi = new ArrayList<>();
-        }
-        new Opener().openZip(roiFile);
-        return roi.addAll(ROIUtils.uncompressROI(new File(roiFile)));
     }
 }
