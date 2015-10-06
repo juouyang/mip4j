@@ -8,7 +8,7 @@ package bmr.run;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import mip.model.data.bmr.BMRReport;
+import mip.model.data.bmr.report.BMRReport;
 import mip.util.IOUtils;
 import org.apache.commons.io.FilenameUtils;
 
