@@ -30,15 +30,15 @@ import org.apache.commons.lang.math.DoubleRange;
 
 public class ColorMapping {
 
-    private static final int CONTRAST = 2692;
     private static int NOISE_FLOOR;
     private static double Glandular_Noise_Ratio;
     private static double Glandular;
     private static final double Initial_Strong_Enhancement = 0.32;
-    private static final double DELAYED_Washout = -0.05;
-    private static final double DELAYED_Plateau = 0.05;
 
-    private static final DoubleRange PLATEAU_RANGE = new DoubleRange(DELAYED_Washout, DELAYED_Plateau);
+    private final double DELAYED_WASHOUT;
+    private final double DELAYED_PLATEAU;
+    private final DoubleRange PLATEAU_RANGE;
+
     private static final DecimalFormat df = new DecimalFormat(" 00.00;-00.00");
 
     private final BMRStudy mrStudy;
@@ -56,17 +56,24 @@ public class ColorMapping {
     public StringBuffer result = new StringBuffer();
 
     public ColorMapping(BMRStudy mrs, String roiFile) {
+        this(mrs, roiFile, -0.05, 0.05);
+    }
+
+    public ColorMapping(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPlateau) {
         mrStudy = mrs;
         rois = IOUtils.fileExisted(roiFile) ? ROIUtils.uncompressROI(roiFile) : new ArrayList<Roi>();
         this.roiFile = roiFile;
-        colorMapping();
+        DELAYED_WASHOUT = delayedWashout;
+        DELAYED_PLATEAU = delayedPlateau;
+        PLATEAU_RANGE = new DoubleRange(DELAYED_WASHOUT, DELAYED_PLATEAU);
+        doColorMapping();
     }
 
     public boolean hasROI() {
         return !rois.isEmpty();
     }
 
-    private void colorMapping() {
+    private void doColorMapping() {
         Timer t = new Timer();
 
         MR fms = mrStudy.mrs2.getImageArrayXY()[mrStudy.mrs2.getLength() / 2]; // first middle slice
@@ -283,7 +290,7 @@ public class ColorMapping {
         return mr.getPixel(x, y);
     }
 
-    private static int mapping(int initial, int peak, int delay) {
+    private int mapping(int initial, int peak, int delay) {
         if (initial > Glandular/* || peak > CONTRAST*/) {
             double R1 = initialPhase(initial, peak);
             double R2 = delayPhase(initial, delay) - R1;
@@ -296,9 +303,9 @@ public class ColorMapping {
             }
 
             if (R1 > Initial_Strong_Enhancement) {
-                if (R2 < DELAYED_Washout) {
+                if (R2 < DELAYED_WASHOUT) {
                     return 1; // Washout
-                } else if (R2 < DELAYED_Plateau) {
+                } else if (R2 < DELAYED_PLATEAU) {
                     return 2; // Plateau
                 } else {
                     return 3; // Persistent
@@ -311,8 +318,8 @@ public class ColorMapping {
         return 6; // Unmapped (Noise)
     }
 
-    private static String mappingDesc(int initial, int peak, int delay) {
-        switch (ColorMapping.mapping(initial, peak, delay)) {
+    private String mappingDesc(int initial, int peak, int delay) {
+        switch (mapping(initial, peak, delay)) {
             case 0:
                 return "Enhanced";
             case 1:

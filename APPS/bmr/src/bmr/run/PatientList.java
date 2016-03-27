@@ -28,7 +28,8 @@ public class PatientList {
                 if (!studies.contains(studyRoot)) {
                     studies.add(studyRoot);
                     MR mr = new MR(fn.toString());
-                    table.put(mr.getStudyID(), mr.getPatientID());
+                    Path hospital = studyRoot.getParent().getFileName();
+                    table.put(hospital + "\t" + mr.getStudyID(), mr.getPatientID());
 
                 }
             } catch (IOException ex) {

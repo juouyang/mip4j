@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.util.List;
 import mip.util.IOUtils;
 import org.apache.commons.io.FileUtils;
@@ -25,11 +26,14 @@ public class MultipleStudy {
     public static void main(String[] args) throws IOException {
         final String dcmRoot = args[0];
         final String roiRoot = args[1];
-        File siList = new File(args[2]);
+        final File siList = new File(args[2]);
+        final double delayWashout = (args.length == 5) ? Double.parseDouble(args[3]) : -0.05;
+        final double delayPlateau = (args.length == 5) ? Double.parseDouble(args[4]) : 0.05;
         List<String> lines = FileUtils.readLines(siList, "UTF-8");
+        final DecimalFormat df = new DecimalFormat(" 00.00;-00.00");
 
         StringBuilder multiResult = new StringBuilder();
-        multiResult.append("PID\\SID\tWashout\tPlateau\tPersistent\tEnhanced\tRoi\n");
+        multiResult.append("Hospital\tPID\tSID\tWashout\tPlateau\tPersistent\tEnhanced\tRoi\n");
 
         for (String s : lines) {
             System.out.println(s);
@@ -52,20 +56,23 @@ public class MultipleStudy {
             final Path studyRoot = Paths.get(dcmRoot + "\\" + hospital + "\\" + study_id);
             final String roiFile = roiRoot + "\\" + hospital + "\\" + study_id + ".zip";
             if (!IOUtils.fileExisted(roiFile)) {
+                System.err.println("ROI zip file not found, please check it is existed.");
                 continue;
             }
 
             final BMRStudy mrStudy = new BMRStudy(studyRoot);
-            final ColorMapping cm = new ColorMapping(mrStudy, roiFile);
+            final ColorMapping cm = new ColorMapping(mrStudy, roiFile, delayWashout, delayPlateau);
+            
 
             if (cm.hasROI()) {
-                multiResult.append(mrStudy.patientID).append("\\");
+                multiResult.append(hospital).append("\t");
+                multiResult.append(mrStudy.patientID).append("\t");
                 multiResult.append(mrStudy.studyID).append("\t");
-                multiResult.append(cm.washoutTotal).append("\t");
-                multiResult.append(cm.plateauTotal).append("\t");
-                multiResult.append(cm.persistentTotal).append("\t");
-                multiResult.append(cm.enhancedTotal).append("\t");
-                multiResult.append(cm.roiTotal).append("\n");
+                multiResult.append(df.format(cm.washoutTotal)).append("\t");
+                multiResult.append(df.format(cm.plateauTotal)).append("\t");
+                multiResult.append(df.format(cm.persistentTotal)).append("\t");
+                multiResult.append(df.format(cm.enhancedTotal)).append("\t");
+                multiResult.append(df.format(cm.roiTotal)).append("\n");
             }
         }
 
