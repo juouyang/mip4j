@@ -15,7 +15,6 @@ public class ShortImageFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setResizable(false);
-        setVisible(true);
     }
 
     public static void main(String args[]) throws InterruptedException {
@@ -23,6 +22,6 @@ public class ShortImageFrame extends JFrame {
         for (int i = 0; i < pixel.length; i++) {
             pixel[i] = (short) (i % 512);
         }
-        new ShortImageFrame(new ShortImage(512, 512, pixel));
+        new ShortImageFrame(new ShortImage(512, 512, pixel)).setVisible(true);
     }
 }
