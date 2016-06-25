@@ -1,4 +1,4 @@
-package mip.model.data.bmr;
+package mip.data.image.mr;
 
 import ij.ImageJ;
 import ij.ImagePlus;
@@ -20,7 +20,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import mip.model.data.image.MR;
+import mip.data.image.mr.MR;
 import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.util.ROIUtils;
@@ -76,7 +76,7 @@ public class ColorMapping {
     private void doColorMapping() {
         Timer t = new Timer();
 
-        MR fms = mrStudy.mrs2.getImageArrayXY()[mrStudy.mrs2.getLength() / 2]; // first middle slice
+        MR fms = mrStudy.mrs2.getImageArrayXY()[mrStudy.mrs2.getSize() / 2]; // first middle slice
         ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(fms));
         NOISE_FLOOR = (int) Math.ceil(is.stdDev * 2.0);
         Glandular_Noise_Ratio = (NOISE_FLOOR > 1000) ? 1.47 : 1.33;
@@ -85,7 +85,7 @@ public class ColorMapping {
 //        System.out.println("Glandular_Noise_Ratio: " + Glandular_Noise_Ratio);
 //        System.out.println("Glandular: " + Glandular);
 
-        ColorProcessor[] cps = new ColorProcessor[mrStudy.mrs2.getLength()];
+        ColorProcessor[] cps = new ColorProcessor[mrStudy.mrs2.getSize()];
 
         if (hasROI()) {
             result.append("Slice\tRed\tPink\tYellow\tGreen\tBlue\tRoiA\tRoiM\n");

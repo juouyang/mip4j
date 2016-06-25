@@ -1,8 +1,7 @@
-package mip.model.data.bmr;
+package mip.data.image.mr;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import mip.model.data.series.MRSeries;
 import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
 import java.nio.file.Files;
@@ -25,7 +24,7 @@ public class BMRStudy {
         read_dicom_files(studyRoot);
         patientID = mrs2.getImageArrayXY()[0].getPatientID();
         studyID = mrs2.getImageArrayXY()[0].getStudyID();
-        numberOfFrames = mrs2.getLength();
+        numberOfFrames = mrs2.getSize();
         t.printElapsedTime("BMRStudy");
     }
 

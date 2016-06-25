@@ -6,7 +6,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 
-import mip.model.data.image.ShortImage;
+import mip.data.image.ShortImage;
 import mip.view.swing.base.AbstractImagePanel;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;

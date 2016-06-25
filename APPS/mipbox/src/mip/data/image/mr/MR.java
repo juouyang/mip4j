@@ -1,4 +1,4 @@
-package mip.model.data.image;
+package mip.data.image.mr;
 
 import gdcm.Image;
 import gdcm.ImageReader;
@@ -6,6 +6,7 @@ import gdcm.PixelFormat;
 import gdcm.StringFilter;
 
 import java.io.IOException;
+import mip.data.image.ShortImage;
 
 import org.apache.commons.lang.ArrayUtils;
 

@@ -1,7 +1,7 @@
-package mip.model.data.image;
+package mip.data.image;
 
 import ij.ImagePlus;
-import mip.model.data.image.base.AbstractImage;
+import mip.data.image.AbstractImage;
 import mip.util.ImageJUtils;
 import mip.view.swing.ShortImagePanel;
 

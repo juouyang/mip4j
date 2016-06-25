@@ -3,7 +3,7 @@ package mip.util;
 import ij.ImageStack;
 import ij.process.ByteProcessor;
 import ij.process.ShortProcessor;
-import mip.model.data.image.ShortImage;
+import mip.data.image.ShortImage;
 
 public class ImageJUtils {
 

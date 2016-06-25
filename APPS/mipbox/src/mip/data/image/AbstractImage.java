@@ -1,4 +1,4 @@
-package mip.model.data.image.base;
+package mip.data.image;
 
 public abstract class AbstractImage {
 

@@ -4,7 +4,7 @@ import java.awt.BorderLayout;
 
 import javax.swing.JFrame;
 
-import mip.model.data.image.ShortImage;
+import mip.data.image.ShortImage;
 
 public class ShortImageFrame extends JFrame {
 

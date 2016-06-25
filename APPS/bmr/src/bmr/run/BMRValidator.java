@@ -7,7 +7,7 @@ package bmr.run;
 
 import java.nio.file.Path;
 import java.util.HashSet;
-import mip.model.data.bmr.BMRStudy;
+import mip.data.image.mr.BMRStudy;
 import mip.util.IOUtils;
 
 /**

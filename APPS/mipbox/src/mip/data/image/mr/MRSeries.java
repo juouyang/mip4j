@@ -1,14 +1,19 @@
-package mip.model.data.series;
+package mip.data.image.mr;
 
 import ij.ImagePlus;
 import ij.plugin.ZProjector;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import mip.model.data.image.MR;
+import mip.data.image.mr.MR;
+import mip.util.AlphanumComparator;
+import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 
 public class MRSeries {
@@ -17,19 +22,37 @@ public class MRSeries {
     private MR[] imageArrayXY;
     private String seriesNumber;
 
+    public MRSeries(final ArrayList<Path> dcmFiles) throws InterruptedException {
+        ArrayList<String> s = new ArrayList<>();
+        for (Path fn : dcmFiles) {
+            s.add(fn.toString());
+        }
+
+        Collections.sort(s, new AlphanumComparator());
+        read(s.toArray(new String[s.size()]));
+    }
+
     public MRSeries(final String[] dcmFiles) throws InterruptedException {
+        read(dcmFiles);
+    }
+
+    private void read(final String[] dcmFiles) throws InterruptedException {
         imageArrayXY = new MR[dcmFiles.length];
 
         CountDownLatch latch = new CountDownLatch(dcmFiles.length);
         ExecutorService e = Executors.newFixedThreadPool(CORES);
 
         for (int i = 0; i < dcmFiles.length; i++) {
-            e.execute(new ImportRunnable(latch, dcmFiles[i], i, imageArrayXY));
+            e.execute(new ReadMR(latch, dcmFiles[i], i, imageArrayXY));
         }
 
         latch.await();
         e.shutdown();
 
+        checkSeriesNumber();
+    }
+
+    private void checkSeriesNumber() {
         seriesNumber = imageArrayXY[0].getSeriesNumber();
         for (int i = 1; i < imageArrayXY.length; i++) {
             try {
@@ -53,7 +76,7 @@ public class MRSeries {
         return imageArrayXY[0].getHeight();
     }
 
-    public int getLength() {
+    public int getSize() {
         return imageArrayXY.length;
     }
 
@@ -74,32 +97,32 @@ public class MRSeries {
         seriesImage.show();
         seriesImage.setPosition(p);
     }
-}
 
-final class ImportRunnable implements Runnable {
+    private class ReadMR implements Runnable {
 
-    private final CountDownLatch doneSignal;
-    private final String inputFile;
-    private final int outputNumber;
-    private final MR[] outputArray;
+        private final CountDownLatch doneSignal;
+        private final String inputFile;
+        private final int outputNumber;
+        private final MR[] outputArray;
 
-    ImportRunnable(CountDownLatch signal, String dcmFile, int num, MR[] imgArray) {
-        doneSignal = signal;
-        inputFile = dcmFile;
-        outputNumber = num;
-        outputArray = imgArray;
-    }
+        ReadMR(CountDownLatch signal, String dcmFile, int num, MR[] imgArray) {
+            doneSignal = signal;
+            inputFile = dcmFile;
+            outputNumber = num;
+            outputArray = imgArray;
+        }
 
-    @Override
-    public void run() {
-        doWork();
-        doneSignal.countDown();
-    }
+        @Override
+        public void run() {
+            doWork();
+            doneSignal.countDown();
+        }
 
-    private void doWork() {
-        try {
-            outputArray[outputNumber] = new MR(inputFile);
-        } catch (IOException ignore) {
+        private void doWork() {
+            try {
+                outputArray[outputNumber] = new MR(inputFile);
+            } catch (IOException ignore) {
+            }
         }
     }
 }

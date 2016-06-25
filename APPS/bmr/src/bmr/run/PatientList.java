@@ -1,6 +1,6 @@
 package bmr.run;
 
-import mip.model.data.image.MR;
+import mip.data.image.mr.MR;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;

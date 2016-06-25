@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import mip.model.data.image.base.AbstractImage;
+import mip.data.image.AbstractImage;
 
 public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel {
 

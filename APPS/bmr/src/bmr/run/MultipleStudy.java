@@ -1,7 +1,7 @@
 package bmr.run;
 
-import mip.model.data.bmr.BMRStudy;
-import mip.model.data.bmr.ColorMapping;
+import mip.data.image.mr.BMRStudy;
+import mip.data.image.mr.ColorMapping;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
