@@ -4,10 +4,12 @@ import gdcm.Image;
 import gdcm.ImageReader;
 import gdcm.PixelFormat;
 import gdcm.StringFilter;
-
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import mip.data.image.ShortImage;
-
+import mip.util.IOUtils;
+import mip.view.swing.ShortImageFrame;
 import org.apache.commons.lang.ArrayUtils;
 
 public class MR extends ShortImage {
@@ -17,10 +19,10 @@ public class MR extends ShortImage {
     private String instanceNumber;
     private String patientID;
 
-    public MR(String dcmFile) throws IOException {
+    public MR(Path dcmFile) throws IOException {
         ImageReader reader = new ImageReader();
         StringFilter filter = new StringFilter();
-        reader.SetFileName(dcmFile);
+        reader.SetFileName(dcmFile.toString());
         filter.SetFile(reader.GetFile());
 
         try {
@@ -109,4 +111,13 @@ public class MR extends ShortImage {
             System.arraycopy(sub, 0, pixelArray, y * width, getWidth());
         }
     }
+
+    public void show() {
+        new ShortImageFrame(this).setVisible(true);
+    }
+
+    public static void main(String[] args) throws URISyntaxException, IOException {
+        new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath()).show();
+    }
+
 }

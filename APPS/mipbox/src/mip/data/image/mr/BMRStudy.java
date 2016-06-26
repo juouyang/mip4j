@@ -1,8 +1,6 @@
 package mip.data.image.mr;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,10 +8,10 @@ import mip.util.Timer;
 
 public class BMRStudy {
 
-    public final String studyRoot;
-    public final String patientID;
-    public final String studyID;
-    public final int numberOfFrames;
+    final String studyRoot;
+    private final String patientID;
+    private final String studyID;
+
     MRSeries mrs2;
     MRSeries mrs3;
     MRSeries mrs4;
@@ -24,8 +22,15 @@ public class BMRStudy {
         read_dicom_files(studyRoot);
         patientID = mrs2.getImageArrayXY()[0].getPatientID();
         studyID = mrs2.getImageArrayXY()[0].getStudyID();
-        numberOfFrames = mrs2.getSize();
         t.printElapsedTime("BMRStudy");
+    }
+
+    public String getPatientID() {
+        return patientID;
+    }
+
+    public String getStudyID() {
+        return studyID;
     }
 
     private void read_dicom_files(Path studyRoot) {
@@ -36,25 +41,25 @@ public class BMRStudy {
             throw new IllegalArgumentException("Missing series");
         }
 
-        ArrayList<String> t0 = new ArrayList<>();
-        ArrayList<String> t1 = new ArrayList<>();
-        ArrayList<String> t2 = new ArrayList<>();
-        ArrayList<String> s3 = new ArrayList<>();
-        ArrayList<String> s4 = new ArrayList<>();
-        ArrayList<String> s5 = new ArrayList<>();
+        ArrayList<Path> t0 = new ArrayList<>();
+        ArrayList<Path> t1 = new ArrayList<>();
+        ArrayList<Path> t2 = new ArrayList<>();
+        ArrayList<Path> s3 = new ArrayList<>();
+        ArrayList<Path> s4 = new ArrayList<>();
+        ArrayList<Path> s5 = new ArrayList<>();
 
         for (Path fn : IOUtils.listFiles(studyRoot.toString())) {
             if (fn.getParent().endsWith("2")) {
-                t0.add(fn.toString());
+                t0.add(fn);
             }
             if (fn.getParent().endsWith("3")) {
-                s3.add(fn.toString());
+                s3.add(fn);
             }
             if (fn.getParent().endsWith("4")) {
-                s4.add(fn.toString());
+                s4.add(fn);
             }
             if (fn.getParent().endsWith("5")) {
-                s5.add(fn.toString());
+                s5.add(fn);
             }
         }
 
@@ -71,14 +76,10 @@ public class BMRStudy {
             throw new IllegalArgumentException("Unmatched frame-count of series");
         }
 
-        Collections.sort(t0, new AlphanumComparator());
-        Collections.sort(t1, new AlphanumComparator());
-        Collections.sort(t2, new AlphanumComparator());
-
         try {
-            mrs2 = new MRSeries(t0.toArray(new String[t0.size()]));
-            mrs3 = new MRSeries(t1.toArray(new String[t1.size()]));
-            mrs4 = new MRSeries(t2.toArray(new String[t2.size()]));
+            mrs2 = new MRSeries(t0);
+            mrs3 = new MRSeries(t1);
+            mrs4 = new MRSeries(t2);
         } catch (InterruptedException ignore) {
         }
     }

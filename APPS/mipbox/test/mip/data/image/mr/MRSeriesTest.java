@@ -53,10 +53,12 @@ public class MRSeriesTest {
      */
     @Test
     public void testGetImageArrayXY() throws IOException {
-        File f = new File(getClass().getClassLoader().getResource("resources/bmr/2/001.dcm").getFile());
-        String seriesNumber = new MR(f.getPath()).getSeriesNumber();
         MR[] result = instance.getImageArrayXY();
-        assertEquals(seriesNumber, result[0].getSeriesNumber());
+        String pre = "";
+        for (MR mr : result) {
+            String cur = mr.getInstanceNumber();
+            assertTrue(cur.compareTo(pre) > 0);
+        }
     }
 
     /**

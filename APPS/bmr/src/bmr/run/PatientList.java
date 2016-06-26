@@ -27,7 +27,7 @@ public class PatientList {
                 Path studyRoot = fn.getParent().getParent(); // STUDY > SERIES > IMAGE
                 if (!studies.contains(studyRoot)) {
                     studies.add(studyRoot);
-                    MR mr = new MR(fn.toString());
+                    MR mr = new MR(fn);
                     Path hospital = studyRoot.getParent().getFileName();
                     table.put(hospital + "\t" + mr.getStudyID(), mr.getPatientID());
 

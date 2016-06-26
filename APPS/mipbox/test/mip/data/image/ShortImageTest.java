@@ -38,7 +38,7 @@ public class ShortImageTest {
     @Before
     public void setUp() throws IOException {
         File f = new File(getClass().getClassLoader().getResource("resources/bmr/1/001.dcm").getFile());
-        instance = new MR(f.getPath());
+        instance = new MR(f.toPath());
     }
 
     @After

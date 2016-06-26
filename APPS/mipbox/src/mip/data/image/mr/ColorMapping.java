@@ -20,7 +20,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import mip.data.image.mr.MR;
 import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.util.ROIUtils;
@@ -274,7 +273,7 @@ public class ColorMapping {
                 super.mouseWheelMoved(e);
             }
         });
-        imp.setPosition(mrStudy.numberOfFrames / 2);
+        imp.setPosition(mrStudy.mrs2.getSize() / 2);
     }
 
     private String colorMappingInfo(int x, int y, int z) {

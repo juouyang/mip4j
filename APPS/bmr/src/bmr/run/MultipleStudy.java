@@ -66,8 +66,8 @@ public class MultipleStudy {
 
             if (cm.hasROI()) {
                 multiResult.append(hospital).append("\t");
-                multiResult.append(mrStudy.patientID).append("\t");
-                multiResult.append(mrStudy.studyID).append("\t");
+                multiResult.append(mrStudy.getPatientID()).append("\t");
+                multiResult.append(mrStudy.getStudyID()).append("\t");
                 multiResult.append(df.format(cm.washoutTotal)).append("\t");
                 multiResult.append(df.format(cm.plateauTotal)).append("\t");
                 multiResult.append(df.format(cm.persistentTotal)).append("\t");

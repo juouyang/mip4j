@@ -2,6 +2,8 @@ package mip.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import static java.nio.file.FileVisitResult.CONTINUE;
 
 import java.nio.file.FileVisitResult;
@@ -28,6 +30,18 @@ public class IOUtils {
         } catch (Throwable ignore) {
             return false;
         }
+    }
+
+    public static File getFileFromResources(String path) {
+        URL url = IOUtils.class.getClassLoader().getResource(path);
+        File file;
+        try {
+            file = new File(url.toURI());
+        } catch (URISyntaxException e) {
+            file = new File(url.getPath());
+        }
+
+        return file;
     }
 }
 

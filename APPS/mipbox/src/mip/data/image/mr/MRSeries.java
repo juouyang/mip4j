@@ -1,49 +1,36 @@
 package mip.data.image.mr;
 
+import ij.ImageJ;
 import ij.ImagePlus;
 import ij.plugin.ZProjector;
+import ij.process.StackConverter;
+import ij3d.ContentInstant;
+import ij3d.Image3DUniverse;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import mip.data.image.mr.MR;
-import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
+
 import mip.util.ImageJUtils;
 
 public class MRSeries {
 
     private final static int CORES = Runtime.getRuntime().availableProcessors();
-    private MR[] imageArrayXY;
+    private final MR[] imageArrayXY;
     private String seriesNumber;
 
     public MRSeries(final ArrayList<Path> dcmFiles) throws InterruptedException {
-        ArrayList<String> s = new ArrayList<>();
-        for (Path fn : dcmFiles) {
-            s.add(fn.toString());
-        }
+        imageArrayXY = new MR[dcmFiles.size()];
 
-        Collections.sort(s, new AlphanumComparator());
-        read(s.toArray(new String[s.size()]));
-    }
-
-    public MRSeries(final String[] dcmFiles) throws InterruptedException {
-        read(dcmFiles);
-    }
-
-    private void read(final String[] dcmFiles) throws InterruptedException {
-        imageArrayXY = new MR[dcmFiles.length];
-
-        CountDownLatch latch = new CountDownLatch(dcmFiles.length);
+        CountDownLatch latch = new CountDownLatch(dcmFiles.size());
         ExecutorService e = Executors.newFixedThreadPool(CORES);
 
-        for (int i = 0; i < dcmFiles.length; i++) {
-            e.execute(new ReadMR(latch, dcmFiles[i], i, imageArrayXY));
+        for (int i = 0; i < dcmFiles.size(); i++) {
+            e.execute(new ReadMR(latch, dcmFiles.get(i), i, imageArrayXY));
         }
 
         latch.await();
@@ -98,14 +85,32 @@ public class MRSeries {
         seriesImage.setPosition(p);
     }
 
+    public void render() {
+        ImageJ ij = new ImageJ();
+        ij.exitWhenQuitting(true);
+
+        Image3DUniverse univ = new Image3DUniverse();
+        ImagePlus imp = new ImagePlus("", ImageJUtils.getByteImageStackFromShortImageArray(this.imageArrayXY, this.getImageArrayXY()[0].getWindowCenter(), this.getImageArrayXY()[0].getWindowWidth()));
+
+        new StackConverter(imp).convertToGray8();
+
+        ContentInstant ci = univ.addVoltex(imp).getCurrent();
+
+        if (ci != null) {
+            ci.setTransparency(70 / 100f);
+            ci.setThreshold(25);
+            univ.show();
+        }
+    }
+
     private class ReadMR implements Runnable {
 
         private final CountDownLatch doneSignal;
-        private final String inputFile;
+        private final Path inputFile;
         private final int outputNumber;
         private final MR[] outputArray;
 
-        ReadMR(CountDownLatch signal, String dcmFile, int num, MR[] imgArray) {
+        ReadMR(CountDownLatch signal, Path dcmFile, int num, MR[] imgArray) {
             doneSignal = signal;
             inputFile = dcmFile;
             outputNumber = num;
@@ -124,5 +129,11 @@ public class MRSeries {
             } catch (IOException ignore) {
             }
         }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        MRSeries mrs = new MRSeries(IOUtils.listFiles(IOUtils.getFileFromResources("resources/bmr/2/").getPath()));
+        mrs.show(1);
+        mrs.render();
     }
 }

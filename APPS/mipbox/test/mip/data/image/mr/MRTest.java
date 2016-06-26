@@ -36,7 +36,7 @@ public class MRTest {
     @Before
     public void setUp() throws IOException {
         File f = new File(getClass().getClassLoader().getResource("resources/bmr/1/001.dcm").getFile());
-        instance = new MR(f.getPath());
+        instance = new MR(f.toPath());
     }
 
     @After
@@ -102,6 +102,14 @@ public class MRTest {
         int expResult = 512;
         int result = instance.getHeight();
         assertEquals(expResult, result);
+    }
+
+    /**
+     * Test of show method, of class MR.
+     */
+    @Test
+    public void testShow() {
+        instance.show();
     }
 
 }
