@@ -80,4 +80,18 @@ public class BMRStudyTest {
         mrsTest.testGetImageArrayXY();
     }
 
+    /**
+     * Test of getPixel method, of class BMRStudy.
+     */
+    @Test
+    public void testGetPixel() {
+        int x = 0;
+        int y = 0;
+        int z = 0;
+        int t = 0;
+        int expResult = 373;
+        int result = instance.getPixel(x, y, z, t);
+        assertEquals(expResult, result);
+    }
+
 }

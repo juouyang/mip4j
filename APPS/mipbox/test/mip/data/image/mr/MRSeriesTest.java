@@ -119,4 +119,35 @@ public class MRSeriesTest {
         instance.show(1);
     }
 
+    /**
+     * Test of getSize method, of class MRSeries.
+     */
+    @Test
+    public void testGetSize() {
+        int expResult = 160;
+        int result = instance.getSize();
+        assertEquals(expResult, result);
+    }
+
+    /**
+     * Test of getPixel method, of class MRSeries.
+     */
+    @Test
+    public void testGetPixel() {
+        int x = 0;
+        int y = 0;
+        int z = 0;
+        int expResult = 373;
+        int result = instance.getPixel(x, y, z);
+        assertEquals(expResult, result);
+    }
+
+    /**
+     * Test of render method, of class MRSeries.
+     */
+    @Test
+    public void testRender() {
+        instance.render();
+    }
+
 }

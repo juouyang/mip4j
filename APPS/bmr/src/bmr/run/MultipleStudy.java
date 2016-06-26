@@ -62,18 +62,15 @@ public class MultipleStudy {
 
             final BMRStudy mrStudy = new BMRStudy(studyRoot);
             final ColorMapping cm = new ColorMapping(mrStudy, roiFile, delayWashout, delayPlateau);
-            
 
-            if (cm.hasROI()) {
-                multiResult.append(hospital).append("\t");
-                multiResult.append(mrStudy.getPatientID()).append("\t");
-                multiResult.append(mrStudy.getStudyID()).append("\t");
-                multiResult.append(df.format(cm.washoutTotal)).append("\t");
-                multiResult.append(df.format(cm.plateauTotal)).append("\t");
-                multiResult.append(df.format(cm.persistentTotal)).append("\t");
-                multiResult.append(df.format(cm.enhancedTotal)).append("\t");
-                multiResult.append(df.format(cm.roiTotal)).append("\n");
-            }
+            multiResult.append(hospital).append("\t");
+            multiResult.append(mrStudy.getPatientID()).append("\t");
+            multiResult.append(mrStudy.getStudyID()).append("\t");
+            multiResult.append(df.format(cm.washoutTotal)).append("\t");
+            multiResult.append(df.format(cm.plateauTotal)).append("\t");
+            multiResult.append(df.format(cm.persistentTotal)).append("\t");
+            multiResult.append(df.format(cm.enhancedTotal)).append("\t");
+            multiResult.append(df.format(cm.roiTotal)).append("\n");
         }
 
         System.out.println(multiResult.toString());

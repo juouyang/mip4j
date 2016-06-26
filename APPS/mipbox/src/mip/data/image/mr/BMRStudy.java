@@ -33,6 +33,19 @@ public class BMRStudy {
         return studyID;
     }
 
+    public short getPixel(int x, int y, int z, int t) {
+        switch (t) {
+            case 0:
+                return mrs2.getPixel(x, y, z);
+            case 1:
+                return mrs3.getPixel(x, y, z);
+            case 2:
+                return mrs4.getPixel(x, y, z);
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
     private void read_dicom_files(Path studyRoot) {
         final Path p2 = studyRoot.resolve("2");
         final Path p3 = studyRoot.resolve("3");

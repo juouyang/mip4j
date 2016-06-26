@@ -31,11 +31,11 @@ import org.apache.commons.lang.math.DoubleRange;
 
 public class ColorMapping {
 
+    private static final boolean NONE_BACKGROUND = true;
     private static int NOISE_FLOOR;
     private static double Glandular_Noise_Ratio;
     private static double Glandular;
     private static final double Initial_Strong_Enhancement = 0.32;
-
     private final double DELAYED_WASHOUT;
     private final double DELAYED_PLATEAU;
     private final DoubleRange PLATEAU_RANGE;
@@ -70,7 +70,7 @@ public class ColorMapping {
         doColorMapping();
     }
 
-    public boolean hasROI() {
+    private boolean hasROI() {
         return !rois.isEmpty();
     }
 
@@ -94,13 +94,11 @@ public class ColorMapping {
         }
 
         for (int i = 0; i < cps.length; i++) {
-            MR t0 = mrStudy.mrs2.getImageArrayXY()[i];
             MR t1 = mrStudy.mrs3.getImageArrayXY()[i];
-            MR t2 = mrStudy.mrs4.getImageArrayXY()[i];
             final int width = t1.getWidth();
             final int height = t1.getHeight();
             ColorProcessor cp = new ColorProcessor(width, height);
-            ByteProcessor bp = ImageJUtils.getByteProcessorFromShortImage(t1, t1.getWindowCenter(), t1.getWindowWidth());
+            ByteProcessor bp = NONE_BACKGROUND ? null : ImageJUtils.getByteProcessorFromShortImage(t1, t1.getWindowCenter(), t1.getWindowWidth());
 
             final int z = i + 1;
             double enhancedArea = 0;
@@ -110,27 +108,25 @@ public class ColorMapping {
             double yellowArea = 0;
             double blueArea = 0;
             double greenArea = 0;
-
             List<Roi> roi = ROIUtils.filterROI(rois, z);
-            boolean hasROI = (!roi.isEmpty());
 
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    boolean pixelInROI = false;
-                    if (hasROI && ROIUtils.withinROI(roi, x, y)) {
-                        roiArea++;
-                        pixelInROI = true;
+
+                    int initial = mrStudy.getPixel(x, y, i, 0);
+                    int peak = mrStudy.getPixel(x, y, i, 1);
+                    int delay = mrStudy.getPixel(x, y, i, 2);
+                    int r, g, b;
+
+                    if (!NONE_BACKGROUND) {
+                        r = g = b = (bp != null) ? (t1.getPixel(x, y) < 1000 ? 0 : bp.getPixel(x, y)) : 0;
+                        cp.putPixel(x, y, new int[]{r, g, b});
                     }
 
-                    int initial = getSignalIntensity(t0, x, y);
-                    int peak = getSignalIntensity(t1, x, y);
-                    int delay = getSignalIntensity(t2, x, y);
-
-                    int r = bp.getPixel(x, y);
-                    int g = r;
-                    int b = r;
-                    if (false) {
-                        cp.putPixel(x, y, new int[]{r, g, b});
+                    boolean pixelInROI = false;
+                    if (hasROI() && ROIUtils.withinROI(roi, x, y)) {
+                        roiArea++;
+                        pixelInROI = true;
                     }
 
                     final int c = mapping(initial, peak, delay);
@@ -172,8 +168,9 @@ public class ColorMapping {
                     cp.putPixel(x, y, new int[]{r, g, b});
                 }
             }// each pixel
+            cps[i] = cp;
 
-            if (hasROI) {
+            if (hasROI()) {
                 // TODO change 0.49
                 redArea *= 0.49;
                 magentaArea *= 0.49;
@@ -201,11 +198,9 @@ public class ColorMapping {
                 enhancedTotal += enhancedArea * 1.125;
                 roiTotal += roiArea * 1.125;
             }
-
-            cps[i] = cp;
         } // each slice
 
-        ImageStack ims = new ImageStack(512, 512);
+        ImageStack ims = new ImageStack(mrStudy.mrs3.getImageArrayXY()[0].getWidth(), mrStudy.mrs3.getImageArrayXY()[0].getHeight());
         for (ColorProcessor cp : cps) {
             ims.addSlice(cp);
         }
@@ -237,6 +232,70 @@ public class ColorMapping {
         }
 
         t.printElapsedTime("ColorMapping");
+    }
+
+    private static double initialPhase(int initial, int peak) {
+        return (double) (peak - initial) / (double) initial;
+    }
+
+    private static double delayPhase(int initial, int delay) {
+        return (double) (delay - initial) / (double) initial;
+    }
+
+    private int mapping(int initial, int peak, int delay) {
+        if (initial > Glandular/* || peak > CONTRAST*/) {
+            double R1 = initialPhase(initial, peak);
+            double R2 = delayPhase(initial, delay) - R1;
+            if (PLATEAU_RANGE.containsDouble(R2)) {
+                if (R1 < -0.4) {
+                    return 4; // Fluid
+                } else if (R1 < -0.2) {
+                    return 5; // Edema
+                }
+            }
+
+            if (R1 > Initial_Strong_Enhancement) {
+                if (R2 < DELAYED_WASHOUT) {
+                    return 1; // Washout
+                } else if (R2 < DELAYED_PLATEAU) {
+                    return 2; // Plateau
+                } else {
+                    return 3; // Persistent
+                }
+            }
+
+            return 0; // Enhanced
+        }
+
+        return 6; // Unmapped (Noise)
+    }
+
+    private String mappingDesc(int initial, int peak, int delay) {
+        switch (mapping(initial, peak, delay)) {
+            case 0:
+                return "Enhanced";
+            case 1:
+                return "Washout";
+            case 2:
+                return "Plateau";
+            case 3:
+                return "Persistent";
+            case 4:
+                return "Fluid";
+            case 5:
+                return "Edema";
+            default:
+                return "Unmapped";
+        }
+    }
+
+    private String colorMappingInfo(int x, int y, int z) {
+        final short initial = mrStudy.getPixel(x, y, z, 0);
+        final short peak = mrStudy.getPixel(x, y, z, 1);
+        final short delay = mrStudy.getPixel(x, y, z, 2);
+        final double R1 = ColorMapping.initialPhase(initial, peak);
+        final double R2 = ColorMapping.delayPhase(initial, delay) - R1;
+        return String.format("(%03d,%03d,%03d) = %04d -> %04d -> %04d, R1=%s, R2=%s, %s", x, y, z + 1, initial, peak, delay, df.format(R1), df.format(R2), mappingDesc(initial, peak, delay));
     }
 
     public void save() throws IOException {
@@ -291,72 +350,8 @@ public class ColorMapping {
         }
     }
 
-    private String colorMappingInfo(int x, int y, int z) {
-        final short initial = getSignalIntensity(mrStudy.mrs2.getImageArrayXY()[z], x, y);
-        final short peak = getSignalIntensity(mrStudy.mrs3.getImageArrayXY()[z], x, y);
-        final short delay = getSignalIntensity(mrStudy.mrs4.getImageArrayXY()[z], x, y);
-        final double R1 = ColorMapping.initialPhase(initial, peak);
-        final double R2 = ColorMapping.delayPhase(initial, delay) - R1;
-        return String.format("(%03d,%03d,%03d) = %04d -> %04d -> %04d, R1=%s, R2=%s, %s", x, y, z + 1, initial, peak, delay, df.format(R1), df.format(R2), mappingDesc(initial, peak, delay));
-    }
-
-    private static short getSignalIntensity(MR mr, int x, int y) {
-        return mr.getPixel(x, y);
-    }
-
-    private int mapping(int initial, int peak, int delay) {
-        if (initial > Glandular/* || peak > CONTRAST*/) {
-            double R1 = initialPhase(initial, peak);
-            double R2 = delayPhase(initial, delay) - R1;
-            if (PLATEAU_RANGE.containsDouble(R2)) {
-                if (R1 < -0.4) {
-                    return 4; // Fluid
-                } else if (R1 < -0.2) {
-                    return 5; // Edema
-                }
-            }
-
-            if (R1 > Initial_Strong_Enhancement) {
-                if (R2 < DELAYED_WASHOUT) {
-                    return 1; // Washout
-                } else if (R2 < DELAYED_PLATEAU) {
-                    return 2; // Plateau
-                } else {
-                    return 3; // Persistent
-                }
-            }
-
-            return 0; // Enhanced
-        }
-
-        return 6; // Unmapped (Noise)
-    }
-
-    private String mappingDesc(int initial, int peak, int delay) {
-        switch (mapping(initial, peak, delay)) {
-            case 0:
-                return "Enhanced";
-            case 1:
-                return "Washout";
-            case 2:
-                return "Plateau";
-            case 3:
-                return "Persistent";
-            case 4:
-                return "Fluid";
-            case 5:
-                return "Edema";
-            default:
-                return "Unmapped";
-        }
-    }
-
-    private static double initialPhase(int initial, int peak) {
-        return (double) (peak - initial) / (double) initial;
-    }
-
-    private static double delayPhase(int initial, int delay) {
-        return (double) (delay - initial) / (double) initial;
+    public int getColorMapping(int x, int y, int z) {
+        return mapping(mrStudy.getPixel(x, y, z, 0), mrStudy.getPixel(x, y, z, 1), mrStudy.getPixel(x, y, z, 2));
     }
 
     public static void main(String[] args) {

@@ -67,6 +67,10 @@ public class MRSeries {
         return imageArrayXY.length;
     }
 
+    public short getPixel(int x, int y, int z) {
+        return imageArrayXY[z].getPixel(x, y);
+    }
+
     public ImagePlus toImagePlus(String title) {
         return new ImagePlus(title, ImageJUtils.getShortImageStackFromShortImageArray(imageArrayXY));
     }
@@ -133,7 +137,7 @@ public class MRSeries {
 
     public static void main(String[] args) throws InterruptedException {
         MRSeries mrs = new MRSeries(IOUtils.listFiles(IOUtils.getFileFromResources("resources/bmr/2/").getPath()));
-        mrs.show(1);
+        mrs.show(mrs.getSize() / 2);
         mrs.render();
     }
 }
