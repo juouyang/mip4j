@@ -25,7 +25,6 @@ public class ShortImagePanel extends AbstractImagePanel<ShortImage> {
     private int winWidth = 0;
     private short pixelMax = Short.MIN_VALUE;
     private short pixelMin = Short.MAX_VALUE;
-    private int scale = 0;
 
     @Override
     public final void setImage(ShortImage si) {
@@ -33,7 +32,6 @@ public class ShortImagePanel extends AbstractImagePanel<ShortImage> {
         winWidth = si.getWindowWidth();
         pixelMax = si.getMax();
         pixelMin = si.getMin();
-        scale = (int) ((pixelMax - pixelMin) * 0.08);
         super.setImage(si);
     }
 
@@ -46,8 +44,10 @@ public class ShortImagePanel extends AbstractImagePanel<ShortImage> {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                int wc = (e.getX() > preX) ? winCenter - scale : winCenter + scale;
-                int ww = (e.getY() > preY) ? winWidth - scale : winWidth + scale;
+                int diff_x = Math.abs(e.getX() - preX);
+                int diff_y = Math.abs(e.getY() - preY);
+                int wc = (e.getX() > preX) ? winCenter - diff_x : winCenter + diff_x;
+                int ww = (e.getY() > preY) ? winWidth - diff_y : winWidth + diff_y;
                 setWinCenterWidth(wc, ww);
                 preX = e.getX();
                 preY = e.getY();
@@ -57,7 +57,7 @@ public class ShortImagePanel extends AbstractImagePanel<ShortImage> {
             public void mouseMoved(MouseEvent e) {
                 final int x = e.getX();
                 final int y = e.getY();
-                setTitle(String.format("(%04d,%04d)=%04d", x, y, img.getPixel(x, y)));
+                setTitle(String.format("[%04d:%04d] (%04d,%04d)=%04d", winCenter, winWidth, x, y, img.getPixel(x, y)));
             }
         });
 
