@@ -94,7 +94,7 @@ public class MRSeries {
 
         new StackConverter(imp).convertToGray8();
 
-        ContentInstant ci = univ.addVoltex(imp).getCurrent();
+        ContentInstant ci = univ.addVoltex(imp, 1).getCurrent();
 
         if (ci != null) {
             ci.setTransparency(70 / 100f);

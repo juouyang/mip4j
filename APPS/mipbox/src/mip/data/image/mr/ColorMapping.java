@@ -10,6 +10,8 @@ import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ImageStatistics;
 import ij.process.ShortStatistics;
+import ij3d.ContentInstant;
+import ij3d.Image3DUniverse;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -54,8 +56,8 @@ public class ColorMapping {
     public double roiTotal = 0;
     public StringBuffer result = new StringBuffer();
 
-    public ColorMapping(BMRStudy mrs, String roiFile) {
-        this(mrs, roiFile, -0.05, 0.05);
+    public ColorMapping(BMRStudy mrs) {
+        this(mrs, null, -0.05, 0.05);
     }
 
     public ColorMapping(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPlateau) {
@@ -127,7 +129,9 @@ public class ColorMapping {
                     int r = bp.getPixel(x, y);
                     int g = r;
                     int b = r;
-                    cp.putPixel(x, y, new int[]{r, g, b});
+                    if (false) {
+                        cp.putPixel(x, y, new int[]{r, g, b});
+                    }
 
                     final int c = mapping(initial, peak, delay);
                     switch (c) {
@@ -245,7 +249,9 @@ public class ColorMapping {
         ImageJ ij = new ImageJ();
         ij.exitWhenQuitting(true);
 
-        new Opener().openZip(roiFile);
+        if (roiFile != null) {
+            new Opener().openZip(roiFile);
+        }
         imp.show();
         imp.getCanvas().addMouseMotionListener(new MouseAdapter() {
 
@@ -274,6 +280,15 @@ public class ColorMapping {
             }
         });
         imp.setPosition(mrStudy.mrs2.getSize() / 2);
+    }
+
+    public void render() {
+        Image3DUniverse univ = new Image3DUniverse();
+        ContentInstant ci = univ.addVoltex(imp, 1).getCurrent();
+
+        if (ci != null) {
+            univ.show();
+        }
     }
 
     private String colorMappingInfo(int x, int y, int z) {
@@ -342,5 +357,12 @@ public class ColorMapping {
 
     private static double delayPhase(int initial, int delay) {
         return (double) (delay - initial) / (double) initial;
+    }
+
+    public static void main(String[] args) {
+        File studyRoot = new File(ColorMapping.class.getClassLoader().getResource("resources/bmr/").getFile());
+        final ColorMapping cm = new ColorMapping(new BMRStudy(studyRoot.toPath()));
+        cm.show();
+        cm.render();
     }
 }
