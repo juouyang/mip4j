@@ -1,7 +1,10 @@
 package mip.data.image;
 
+import gdcm.Image;
+import gdcm.ImageReader;
+import gdcm.PixelFormat;
+import gdcm.StringFilter;
 import ij.ImagePlus;
-import mip.data.image.AbstractImage;
 import mip.util.ImageJUtils;
 import mip.view.swing.ShortImagePanel;
 
@@ -27,6 +30,36 @@ public class ShortImage extends AbstractImage {
         width = w;
         height = h;
         pixelArray = pixels;
+    }
+
+    protected void read(ImageReader reader, StringFilter filter, String modality) {
+        // check modality
+        if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains(modality)) {
+            throw new IllegalArgumentException("not mri");
+        }
+
+        // check dimension
+        Image gImg = reader.GetImage();
+
+        if (gImg.GetNumberOfDimensions() != 2) {
+            throw new IllegalArgumentException("dimension is not 2");
+        }
+
+        width = (int) gImg.GetDimension(0);
+        height = (int) gImg.GetDimension(1);
+        pixelArray = new short[width * height];
+
+        // check pixel type
+        PixelFormat pixeltype = gImg.GetPixelFormat();
+
+        if ((pixeltype.GetScalarType() != PixelFormat.ScalarType.INT16) && (pixeltype.GetScalarType() != PixelFormat.ScalarType.UINT16)) {
+            throw new IllegalArgumentException("neither INT16 nor UINT16 image type");
+        }
+
+        // load pixel
+        if (!gImg.GetArray(pixelArray)) {
+            throw new IllegalArgumentException("unable to load pixel array");
+        }
     }
 
     protected void setPixel(int x, int y, int v) {

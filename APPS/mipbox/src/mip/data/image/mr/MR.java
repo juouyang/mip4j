@@ -30,44 +30,7 @@ public class MR extends ShortImage {
                 throw new IOException("unable to read " + dcmFile);
             }
 
-            // check modality
-            if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains("MR")) {
-                throw new IllegalArgumentException("not mri");
-            }
-
-            // check dimension
-            Image gImg = reader.GetImage();
-
-            if (gImg.GetNumberOfDimensions() != 2) {
-                throw new IllegalArgumentException("dimension is not 2");
-            }
-
-            width = (int) gImg.GetDimension(0);
-            height = (int) gImg.GetDimension(1);
-            pixelArray = new short[width * height];
-
-            // check pixel type
-            PixelFormat pixeltype = gImg.GetPixelFormat();
-
-            if ((pixeltype.GetScalarType() != PixelFormat.ScalarType.INT16) && (pixeltype.GetScalarType() != PixelFormat.ScalarType.UINT16)) {
-                throw new IllegalArgumentException("neither INT16 nor UINT16 image type");
-            }
-
-            // load pixel
-            if (!gImg.GetArray(pixelArray)) {
-                throw new IllegalArgumentException("unable to load pixel array");
-            }
-
-            for (int i = 0; i < pixelArray.length; i++) {
-                if (max < pixelArray[i]) {
-                    max = pixelArray[i];
-                }
-
-                if (min > pixelArray[i]) {
-                    min = pixelArray[i];
-                }
-            }
-
+            read(reader, filter, "MR");
             flipVertically(pixelArray);
 
             try {
@@ -105,10 +68,10 @@ public class MR extends ShortImage {
     private void flipVertically(short[] array) {
         ArrayUtils.reverse(array);
 
-        for (int y = 0; y < getHeight(); y++) {
+        for (int y = 0; y < height; y++) {
             short[] sub = ArrayUtils.subarray(array, (y * width), ((y + 1) * width));
             ArrayUtils.reverse(sub);
-            System.arraycopy(sub, 0, pixelArray, y * width, getWidth());
+            System.arraycopy(sub, 0, pixelArray, y * width, width);
         }
     }
 
