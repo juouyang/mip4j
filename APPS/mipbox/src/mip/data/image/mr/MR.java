@@ -1,8 +1,6 @@
 package mip.data.image.mr;
 
-import gdcm.Image;
 import gdcm.ImageReader;
-import gdcm.PixelFormat;
 import gdcm.StringFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -30,7 +28,7 @@ public class MR extends ShortImage {
                 throw new IOException("unable to read " + dcmFile);
             }
 
-            read(reader, filter, "MR");
+            readShortPixels(reader, filter, "MR");
             flipVertically(pixelArray);
 
             try {

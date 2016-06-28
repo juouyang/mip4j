@@ -32,10 +32,10 @@ public class ShortImage extends AbstractImage {
         pixelArray = pixels;
     }
 
-    protected void read(ImageReader reader, StringFilter filter, String modality) {
+    protected void readShortPixels(ImageReader reader, StringFilter filter, String modality) {
         // check modality
         if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains(modality)) {
-            throw new IllegalArgumentException("not mri");
+            throw new IllegalArgumentException("not " + modality);
         }
 
         // check dimension
