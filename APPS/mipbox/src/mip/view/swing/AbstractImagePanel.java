@@ -1,8 +1,9 @@
-package mip.view.swing.base;
+package mip.view.swing;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import javax.swing.JFrame;
 
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -10,6 +11,14 @@ import javax.swing.SwingUtilities;
 import mip.data.image.AbstractImage;
 
 public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel {
+
+    public static class VIEW_ACCESS_TOKEN {
+
+        private VIEW_ACCESS_TOKEN() {
+        }
+    }
+
+    protected static final VIEW_ACCESS_TOKEN TOKEN = new VIEW_ACCESS_TOKEN();
 
     protected BufferedImage bi;
     protected T img;
@@ -64,5 +73,10 @@ public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel
         }
 
         return new Dimension(1, 1);
+    }
+
+    protected void setTitle(String s) {
+        final JFrame frame = (JFrame) SwingUtilities.getRoot(this);
+        frame.setTitle(s);
     }
 }

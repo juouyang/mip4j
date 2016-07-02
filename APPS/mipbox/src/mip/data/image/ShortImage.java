@@ -5,8 +5,13 @@ import gdcm.ImageReader;
 import gdcm.PixelFormat;
 import gdcm.StringFilter;
 import ij.ImagePlus;
+import java.io.IOException;
+import mip.data.ConnectedComponent;
+import mip.data.image.mr.MR;
+import mip.util.IOUtils;
 import mip.util.ImageJUtils;
-import mip.view.swing.ShortImagePanel;
+import mip.view.swing.AbstractImagePanel;
+import mip.view.swing.ShortImageFrame;
 
 public class ShortImage extends AbstractImage {
 
@@ -81,7 +86,7 @@ public class ShortImage extends AbstractImage {
         return pixelArray[(y * width) + x];
     }
 
-    public short[] getPixelArray(ShortImagePanel.VIEW_ACCESS_TOKEN token) {
+    public short[] getPixelArray(AbstractImagePanel.VIEW_ACCESS_TOKEN token) {
         token.hashCode();
         return pixelArray;
     }
@@ -122,7 +127,21 @@ public class ShortImage extends AbstractImage {
         return windowWidth;
     }
 
-    public ImagePlus toImagePlus(String title) {
+    public void show() {
+        new ShortImageFrame(this).setVisible(true);
+    }
+
+    public ImagePlus getImagePlus(String title) {
         return new ImagePlus(title, ImageJUtils.getShortProcessorFromShortImage(this));
+    }
+
+    public static void main(String[] args) {
+        ShortImage si = new ShortImage(512, 512);
+        for (int y = 0; y < si.getHeight(); y++) {
+            for (int x = 0; x < si.getWidth(); x++) {
+                si.setPixel(x, y, x* y % 512);
+            }
+        }
+        si.show();
     }
 }

@@ -29,7 +29,7 @@ import mip.util.Timer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.math.DoubleRange;
 
-public class ColorMapping {
+public class Kinetic {
 
     private static final boolean NONE_BACKGROUND = true;
     private static int NOISE_FLOOR;
@@ -56,11 +56,11 @@ public class ColorMapping {
     public double roiTotal = 0;
     public StringBuffer result = new StringBuffer();
 
-    public ColorMapping(BMRStudy mrs) {
+    public Kinetic(BMRStudy mrs) {
         this(mrs, null, -0.05, 0.05);
     }
 
-    public ColorMapping(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPlateau) {
+    public Kinetic(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPlateau) {
         mrStudy = mrs;
         rois = IOUtils.fileExisted(roiFile) ? ROIUtils.uncompressROI(roiFile) : new ArrayList<Roi>();
         this.roiFile = roiFile;
@@ -68,6 +68,10 @@ public class ColorMapping {
         DELAYED_PLATEAU = delayedPlateau;
         PLATEAU_RANGE = new DoubleRange(DELAYED_WASHOUT, DELAYED_PLATEAU);
         doColorMapping();
+    }
+
+    public static double getGlandular() {
+        return Glandular;
     }
 
     private boolean hasROI() {
@@ -82,9 +86,6 @@ public class ColorMapping {
         NOISE_FLOOR = (int) Math.ceil(is.stdDev * 2.0);
         Glandular_Noise_Ratio = (NOISE_FLOOR > 1000) ? 1.47 : 1.33;
         Glandular = Glandular_Noise_Ratio * NOISE_FLOOR;
-//        System.out.println("NOISE_FLOOR: " + NOISE_FLOOR);
-//        System.out.println("Glandular_Noise_Ratio: " + Glandular_Noise_Ratio);
-//        System.out.println("Glandular: " + Glandular);
 
         ColorProcessor[] cps = new ColorProcessor[mrStudy.mrs2.getSize()];
 
@@ -293,8 +294,8 @@ public class ColorMapping {
         final short initial = mrStudy.getPixel(x, y, z, 0);
         final short peak = mrStudy.getPixel(x, y, z, 1);
         final short delay = mrStudy.getPixel(x, y, z, 2);
-        final double R1 = ColorMapping.initialPhase(initial, peak);
-        final double R2 = ColorMapping.delayPhase(initial, delay) - R1;
+        final double R1 = Kinetic.initialPhase(initial, peak);
+        final double R2 = Kinetic.delayPhase(initial, delay) - R1;
         return String.format("(%03d,%03d,%03d) = %04d -> %04d -> %04d, R1=%s, R2=%s, %s", x, y, z + 1, initial, peak, delay, df.format(R1), df.format(R2), mappingDesc(initial, peak, delay));
     }
 
@@ -350,13 +351,13 @@ public class ColorMapping {
         }
     }
 
-    public int getColorMapping(int x, int y, int z) {
+    public int getKinetic(int x, int y, int z) {
         return mapping(mrStudy.getPixel(x, y, z, 0), mrStudy.getPixel(x, y, z, 1), mrStudy.getPixel(x, y, z, 2));
     }
 
     public static void main(String[] args) {
-        File studyRoot = new File(ColorMapping.class.getClassLoader().getResource("resources/bmr/").getFile());
-        final ColorMapping cm = new ColorMapping(new BMRStudy(studyRoot.toPath()));
+        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        final Kinetic cm = new Kinetic(new BMRStudy(studyRoot.toPath()));
         cm.show();
         cm.render();
     }

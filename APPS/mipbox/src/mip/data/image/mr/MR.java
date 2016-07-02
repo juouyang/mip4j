@@ -3,11 +3,9 @@ package mip.data.image.mr;
 import gdcm.ImageReader;
 import gdcm.StringFilter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import mip.data.image.ShortImage;
 import mip.util.IOUtils;
-import mip.view.swing.ShortImageFrame;
 import org.apache.commons.lang.ArrayUtils;
 
 public class MR extends ShortImage {
@@ -73,12 +71,11 @@ public class MR extends ShortImage {
         }
     }
 
-    public void show() {
-        new ShortImageFrame(this).setVisible(true);
-    }
-
-    public static void main(String[] args) throws URISyntaxException, IOException {
-        new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath()).show();
+    public static void main(String[] args) {
+        try {
+            new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath()).show();
+        } catch (IOException ignore) {
+        }
     }
 
 }

@@ -5,10 +5,13 @@
  */
 package mip.data.image;
 
+import gdcm.ImageReader;
+import gdcm.StringFilter;
 import mip.data.image.mr.MR;
 import ij.ImagePlus;
 import java.io.File;
 import java.io.IOException;
+import mip.view.swing.AbstractImagePanel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -116,8 +119,16 @@ public class ShortImageTest {
     @Test
     public void testToImagePlus() {
         String title = "";
-        ImagePlus result = instance.toImagePlus(title);
+        ImagePlus result = instance.getImagePlus(title);
         assertEquals((int) result.getProcessor().getMin(), instance.getMin());
         assertEquals((int) result.getProcessor().getMax(), instance.getMax());
+    }
+
+    /**
+     * Test of show method, of class ShortImage.
+     */
+    @Test
+    public void testShow() {
+        instance.show();
     }
 }

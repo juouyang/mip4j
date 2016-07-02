@@ -17,11 +17,11 @@ import static org.junit.Assert.*;
  *
  * @author ju
  */
-public class ColorMappingTest {
+public class KineticTest {
 
-    ColorMapping instance;
+    Kinetic instance;
 
-    public ColorMappingTest() {
+    public KineticTest() {
     }
 
     @BeforeClass
@@ -35,7 +35,7 @@ public class ColorMappingTest {
     @Before
     public void setUp() {
         File studyRoot = new File(getClass().getClassLoader().getResource("resources/bmr/").getFile());
-        instance = new ColorMapping(new BMRStudy(studyRoot.toPath()));
+        instance = new Kinetic(new BMRStudy(studyRoot.toPath()));
     }
 
     @After
@@ -68,8 +68,20 @@ public class ColorMappingTest {
         int y = 0;
         int z = 0;
         int expResult = 6;
-        int result = instance.getColorMapping(x, y, z);
+        int result = instance.getKinetic(x, y, z);
         assertEquals(expResult, result);
     }
 
+    /**
+     * Test of getKinetic method, of class Kinetic.
+     */
+    @Test
+    public void testGetKinetic() {
+        int x = 0;
+        int y = 0;
+        int z = 0;
+        int expResult = 6;
+        int result = instance.getKinetic(x, y, z);
+        assertEquals(expResult, result);
+    }
 }
