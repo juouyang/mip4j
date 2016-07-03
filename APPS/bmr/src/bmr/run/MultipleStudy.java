@@ -1,7 +1,7 @@
 package bmr.run;
 
 import mip.data.image.mr.BMRStudy;
-import mip.data.image.mr.ColorMapping;
+import mip.data.image.mr.Kinetic;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,7 +61,7 @@ public class MultipleStudy {
             }
 
             final BMRStudy mrStudy = new BMRStudy(studyRoot);
-            final ColorMapping cm = new ColorMapping(mrStudy, roiFile, delayWashout, delayPlateau);
+            final Kinetic cm = new Kinetic(mrStudy, roiFile, delayWashout, delayPlateau);
 
             multiResult.append(hospital).append("\t");
             multiResult.append(mrStudy.getPatientID()).append("\t");

@@ -1,7 +1,9 @@
 package mip.data.image;
 
+import ij.ImagePlus;
 import java.awt.Color;
 import mip.data.ConnectedComponent;
+import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ColorImageFrame;
 
@@ -61,6 +63,11 @@ public class ColorImage extends AbstractImage {
         new ColorImageFrame(this).setVisible(true);
     }
 
+    @Override
+    protected ImagePlus _getImagePlus(String title) {
+        return new ImagePlus(title, ImageJUtils.getColorProcessorFromColorImage(this));
+    }
+
     public static void main(String[] args) {
         ColorImage ci = new ColorImage(512, 512);
         for (int y = 0; y < ci.getHeight(); y++) {
@@ -69,5 +76,6 @@ public class ColorImage extends AbstractImage {
             }
         }
         ci.show();
+        ci.getImagePlus("").show();
     }
 }

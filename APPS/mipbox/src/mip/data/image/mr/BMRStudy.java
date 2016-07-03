@@ -1,5 +1,6 @@
 package mip.data.image.mr;
 
+import java.io.File;
 import java.util.ArrayList;
 import mip.util.IOUtils;
 import java.nio.file.Files;
@@ -95,5 +96,10 @@ public class BMRStudy {
             mrs4 = new MRSeries(t2);
         } catch (InterruptedException ignore) {
         }
+    }
+
+    public static void main(String[] args) {
+        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        System.out.println(new BMRStudy(studyRoot.toPath()).getStudyID());
     }
 }

@@ -2,7 +2,10 @@ package mip.util;
 
 import ij.ImageStack;
 import ij.process.ByteProcessor;
+import ij.process.ColorProcessor;
 import ij.process.ShortProcessor;
+import mip.data.image.BitImage;
+import mip.data.image.ColorImage;
 import mip.data.image.ShortImage;
 
 public class ImageJUtils {
@@ -10,8 +13,42 @@ public class ImageJUtils {
     private ImageJUtils() { // singleton
     }
 
+    public static ByteProcessor getByteProcessorFromBitImage(BitImage bi) {
+        ByteProcessor ip = new ByteProcessor(bi.getWidth(), bi.getHeight());
+
+        for (int y = 0; y < ip.getHeight(); y++) {
+            for (int x = 0; x < ip.getWidth(); x++) {
+                int v = 0;
+
+                if (bi.getPixel(x, y)) {
+                    v = 255;
+                }
+
+                ip.putPixel(x, y, v);
+            }
+        }
+
+        return ip;
+    }
+
+    public static ColorProcessor getColorProcessorFromColorImage(ColorImage ci) {
+        ColorProcessor ip = new ColorProcessor(ci.getWidth(), ci.getHeight());
+
+        for (int y = 0; y < ip.getHeight(); y++) {
+            for (int x = 0; x < ip.getWidth(); x++) {
+                int r = ci.getPixel(x, y).R;
+                int g = ci.getPixel(x, y).G;
+                int b = ci.getPixel(x, y).B;
+                ip.putPixel(x, y, ((r << 16) & 0x00FF0000) | ((g << 8) & 0x0000FF00) | (b
+                        & 0x000000FF));
+            }
+        }
+
+        return ip;
+    }
+
     public static ShortProcessor getShortProcessorFromShortImage(ShortImage si) {
-        ShortProcessor sp = new ShortProcessor(si.getWidth(), si.getHeight());
+        ShortProcessor ip = new ShortProcessor(si.getWidth(), si.getHeight());
 
         short imgMin = si.getMin();
         short imgMax = si.getMax();
@@ -21,17 +58,17 @@ public class ImageJUtils {
             offset = imgMax - imgMin;
         }
 
-        for (int y = 0; y < sp.getHeight(); y++) {
-            for (int x = 0; x < sp.getWidth(); x++) {
-                sp.putPixel(x, y, si.getPixel(x, y) + offset);
+        for (int y = 0; y < ip.getHeight(); y++) {
+            for (int x = 0; x < ip.getWidth(); x++) {
+                ip.putPixel(x, y, si.getPixel(x, y) + offset);
             }
         }
 
-        return sp;
+        return ip;
     }
 
     public static ByteProcessor getByteProcessorFromShortImage(ShortImage si, int windowCenter, int windowWidth) {
-        ByteProcessor bp = new ByteProcessor(si.getWidth(), si.getHeight());
+        ByteProcessor ip = new ByteProcessor(si.getWidth(), si.getHeight());
 
         int imgMin = windowCenter - (windowWidth / 2);
         int imgMax = windowCenter + (windowWidth / 2);
@@ -39,8 +76,8 @@ public class ImageJUtils {
         int displayMax = 255;
         float displayRatio = (float) (displayMax - displayMin) / (imgMax - imgMin);
 
-        for (int y = 0; y < bp.getHeight(); y++) {
-            for (int x = 0; x < bp.getWidth(); x++) {
+        for (int y = 0; y < ip.getHeight(); y++) {
+            for (int x = 0; x < ip.getWidth(); x++) {
                 int v = si.getPixel(x, y);
 
                 if (v < imgMin) {
@@ -51,11 +88,11 @@ public class ImageJUtils {
                     v = ((int) ((v - imgMin) * displayRatio));
                 }
 
-                bp.putPixel(x, y, v);
+                ip.putPixel(x, y, v);
             }
         }
 
-        return bp;
+        return ip;
     }
 
     public static ImageStack getShortImageStackFromShortImageArray(ShortImage[] imageArray) {

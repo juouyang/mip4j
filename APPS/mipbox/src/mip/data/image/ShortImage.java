@@ -5,10 +5,6 @@ import gdcm.ImageReader;
 import gdcm.PixelFormat;
 import gdcm.StringFilter;
 import ij.ImagePlus;
-import java.io.IOException;
-import mip.data.ConnectedComponent;
-import mip.data.image.mr.MR;
-import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ShortImageFrame;
@@ -37,7 +33,7 @@ public class ShortImage extends AbstractImage {
         pixelArray = pixels;
     }
 
-    protected void readShortPixels(ImageReader reader, StringFilter filter, String modality) {
+    protected void readGDCMPixels(ImageReader reader, StringFilter filter, String modality) {
         // check modality
         if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains(modality)) {
             throw new IllegalArgumentException("not " + modality);
@@ -131,7 +127,8 @@ public class ShortImage extends AbstractImage {
         new ShortImageFrame(this).setVisible(true);
     }
 
-    public ImagePlus getImagePlus(String title) {
+    @Override
+    protected ImagePlus _getImagePlus(String title) {
         return new ImagePlus(title, ImageJUtils.getShortProcessorFromShortImage(this));
     }
 
@@ -139,9 +136,10 @@ public class ShortImage extends AbstractImage {
         ShortImage si = new ShortImage(512, 512);
         for (int y = 0; y < si.getHeight(); y++) {
             for (int x = 0; x < si.getWidth(); x++) {
-                si.setPixel(x, y, x* y % 512);
+                si.setPixel(x, y, x * y % 512);
             }
         }
         si.show();
+        si.getImagePlus("").show();
     }
 }

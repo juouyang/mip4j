@@ -1,6 +1,6 @@
 package bmr.run;
 
-import mip.data.image.mr.ColorMapping;
+import mip.data.image.mr.Kinetic;
 import mip.data.image.mr.BMRStudy;
 import mip.util.IOUtils;
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class SingleStudy {
         final double delayWashout = (args.length == 4) ? Double.parseDouble(args[2]) : -0.05;
         final double delayPlateau = (args.length == 4) ? Double.parseDouble(args[3]) : 0.05;
         final BMRStudy mrStudy = new BMRStudy(studyRoot);
-        final ColorMapping cm = new ColorMapping(mrStudy, roiFile, delayWashout, delayPlateau);
+        final Kinetic cm = new Kinetic(mrStudy, roiFile, delayWashout, delayPlateau);
         cm.show();
         cm.save();
 

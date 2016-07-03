@@ -4,6 +4,8 @@ import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
+import ij.ImagePlus;
+import ij.process.ColorProcessor;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -213,6 +215,32 @@ public class CCImage extends AbstractImage {
         new ColorImageFrame(ci).setVisible(true);
     }
 
+    @Override
+    protected ImagePlus _getImagePlus(String title) {
+        ColorProcessor ip = new ColorProcessor(width, height);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                ConnectedComponent c = componentHashTable.get(getPixel(x, y));
+
+                if (c.getID() == background.getID()) {
+                    continue;
+                }
+
+                int r = c.getColor().getRed();
+                int g = c.getColor().getGreen();
+                int b = c.getColor().getBlue();
+
+                int rgb = ((r << 16) & 0x00FF0000) | ((g << 8) & 0x0000FF00) | (b
+                        & 0x000000FF);
+
+                ip.putPixel(x, y, rgb);
+            }
+        }
+
+        return new ImagePlus(ip.toString(), ip);
+    }
+
     public static void main(String[] args) throws IOException {
         MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
         BitImage bi = new BitImage(mr.width, mr.height);
@@ -222,6 +250,9 @@ public class CCImage extends AbstractImage {
             bi.pixelArray.set(i++, s > 1200);
         }
 
-        new CCImage(bi).show();
+        CCImage cci = new CCImage(bi);
+        cci.show();
+        cci.getImagePlus("").show();
     }
+
 }

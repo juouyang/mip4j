@@ -26,7 +26,7 @@ public class MR extends ShortImage {
                 throw new IOException("unable to read " + dcmFile);
             }
 
-            readShortPixels(reader, filter, "MR");
+            readGDCMPixels(reader, filter, "MR");
             flipVertically(pixelArray);
 
             try {
