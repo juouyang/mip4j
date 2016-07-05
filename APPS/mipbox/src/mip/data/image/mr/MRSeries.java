@@ -107,7 +107,7 @@ public class MRSeries {
         }
     }
 
-    private class ReadMR implements Runnable {
+    private static final class ReadMR implements Runnable {
 
         private final CountDownLatch doneSignal;
         private final Path inputFile;

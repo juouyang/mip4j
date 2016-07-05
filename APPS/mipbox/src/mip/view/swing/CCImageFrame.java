@@ -6,6 +6,7 @@
 package mip.view.swing;
 
 import gnu.trove.map.TLongObjectMap;
+import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import mip.data.ConnectedComponent;
@@ -20,7 +21,7 @@ public class CCImageFrame extends ColorImageFrame {
 
     public CCImageFrame(final CCImage cci) {
         super(cci.getColorImage());
-        addMouseMotionListener(new MouseMotionAdapter() {
+        super.imgPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
                 if (imgPanel.img == null) {
@@ -42,6 +43,7 @@ public class CCImageFrame extends ColorImageFrame {
 
                 if (c != null) {
                     message += c.toString();
+                    c.setColor(Color.WHITE); // TODO change ColorImage
                 }
 
                 setTitle(message);
@@ -51,10 +53,12 @@ public class CCImageFrame extends ColorImageFrame {
 
     public static void main(String[] args) {
         BitImage bi = new BitImage(512, 512);
-        bi.show();
-        CCImage cci = new CCImage(bi);
-        cci.show();
-        new CCImageFrame(cci).setVisible(true);
+        for (int y = 0; y < 512; y++) {
+            for (int x = 0; x < 512; x++) {
+                bi.setPixel(x, y, (x + y) % 64 > 32);
+            }
+        }
+        new CCImageFrame(new CCImage(bi)).setVisible(true);
     }
 
 }

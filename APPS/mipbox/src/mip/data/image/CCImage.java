@@ -12,7 +12,7 @@ import java.io.IOException;
 import mip.data.ConnectedComponent;
 import mip.data.image.mr.MR;
 import mip.util.IOUtils;
-import mip.view.swing.ColorImageFrame;
+import mip.view.swing.CCImageFrame;
 
 /**
  * @author ju Connected Component Labeling
@@ -39,10 +39,6 @@ public class CCImage extends AbstractImage {
         TLongObjectMap<ConnectedComponent> table = new TLongObjectHashMap<>();
 
         ConnectedComponent bg = new ConnectedComponent();
-        bg.setMinX(0);
-        bg.setMinY(0);
-        bg.setMaxX(width - 2); // TODO why -2?
-        bg.setMaxY(height - 2); // TODO why -2?
         bg.setColor(Color.BLACK);
 
         TIntStack stack = new TIntArrayStack(width, height);
@@ -212,7 +208,7 @@ public class CCImage extends AbstractImage {
     }
 
     public void show() {
-        new ColorImageFrame(ci).setVisible(true);
+        new CCImageFrame(this).setVisible(true);
     }
 
     @Override
@@ -252,7 +248,6 @@ public class CCImage extends AbstractImage {
 
         CCImage cci = new CCImage(bi);
         cci.show();
-        cci.getImagePlus("").show();
     }
 
 }

@@ -99,16 +99,14 @@ public class ConnectedComponent {
         StringBuilder sb = new StringBuilder();
 
         int a = getBoundingRectagle().width * getBoundingRectagle().height;
-
-        sb.append("[id = ").append(this.id).append("] ");
-        sb.append("[size = ").append(getAreaSize()).append("]");
-        sb.append("[ratio = ").append((int) ((double) getAreaSize() / a * 100.0)).append("%]");
+        double ratio = (double) getAreaSize() / a * 100.0;
+        sb.append(String.format("(%05d, %07d, %02.2f]", id, getAreaSize(), ratio));
 
         return sb.toString();
     }
 
     private final static Random RANDOM = new Random(System.currentTimeMillis());
-    private final static int PALETTESIZE = 64;
+    public final static int PALETTESIZE = 64;
     private static Color[] COLORPALETTE = null;
 
     public static Color getRandomColor() {
@@ -117,6 +115,18 @@ public class ConnectedComponent {
         }
 
         return COLORPALETTE[RANDOM.nextInt(PALETTESIZE)];
+    }
+
+    public static Color getColorFromPalette(int index) {
+        if (COLORPALETTE == null) {
+            constructColorPalette();
+        }
+
+        if (index < 0 || index > PALETTESIZE) {
+            throw new IllegalArgumentException();
+        }
+
+        return COLORPALETTE[index];
     }
 
     private static void constructColorPalette() {

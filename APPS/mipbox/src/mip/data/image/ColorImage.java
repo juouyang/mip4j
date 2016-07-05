@@ -14,6 +14,11 @@ public class ColorImage extends AbstractImage {
         public short R;
         public short G;
         public short B;
+
+        @Override
+        public String toString() {
+            return String.format("(%04d,%04d,%04d)", R, G, B);
+        }
     }
 
     RGB[] pixelArray = new RGB[1];

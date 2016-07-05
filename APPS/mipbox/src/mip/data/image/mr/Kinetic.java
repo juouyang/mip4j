@@ -35,7 +35,7 @@ public class Kinetic {
     private static int NOISE_FLOOR;
     private static double Glandular_Noise_Ratio;
     private static double Glandular;
-    private static final double Initial_Strong_Enhancement = 0.32;
+    private static final double Initial_Strong_Enhancement = 0.32; // TODO magic number
     private final double DELAYED_WASHOUT;
     private final double DELAYED_PLATEAU;
     private final DoubleRange PLATEAU_RANGE;
@@ -57,7 +57,7 @@ public class Kinetic {
     public StringBuffer result = new StringBuffer();
 
     public Kinetic(BMRStudy mrs) {
-        this(mrs, null, -0.05, 0.05);
+        this(mrs, null, -0.05, 0.05); // TODO magic number
     }
 
     public Kinetic(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPlateau) {
@@ -70,10 +70,6 @@ public class Kinetic {
         doColorMapping();
     }
 
-    public static double getGlandular() {
-        return Glandular;
-    }
-
     private boolean hasROI() {
         return !rois.isEmpty();
     }
@@ -84,7 +80,7 @@ public class Kinetic {
         MR fms = mrStudy.mrs2.getImageArrayXY()[mrStudy.mrs2.getSize() / 2]; // first middle slice
         ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(fms));
         NOISE_FLOOR = (int) Math.ceil(is.stdDev * 2.0);
-        Glandular_Noise_Ratio = (NOISE_FLOOR > 1000) ? 1.47 : 1.33;
+        Glandular_Noise_Ratio = (NOISE_FLOOR > 1000) ? 1.47 : 1.33; // TODO magic number
         Glandular = Glandular_Noise_Ratio * NOISE_FLOOR;
 
         ColorProcessor[] cps = new ColorProcessor[mrStudy.mrs2.getSize()];
@@ -172,7 +168,7 @@ public class Kinetic {
             cps[i] = cp;
 
             if (hasROI()) {
-                // TODO change 0.49
+                // TODO magic number 0.49
                 redArea *= 0.49;
                 magentaArea *= 0.49;
                 yellowArea *= 0.49;
@@ -190,7 +186,7 @@ public class Kinetic {
                 result.append(df.format(enhancedArea)).append("\t");
                 result.append(df.format(roiArea)).append("\n");
 
-                // TODO change 1.125
+                // TODO magic number 1.125
                 washoutTotal += redArea * 1.125;
                 plateauTotal += magentaArea * 1.125;
                 persistentTotal += yellowArea * 1.125;

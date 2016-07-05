@@ -1,9 +1,7 @@
 package mip.data.image;
 
-import ij.ImageJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.process.ImageProcessor;
 import java.io.IOException;
 import java.util.BitSet;
 import mip.data.image.mr.MR;

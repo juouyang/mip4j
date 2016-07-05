@@ -6,12 +6,15 @@
 package mip.view.swing;
 
 import java.awt.BorderLayout;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import javax.swing.JFrame;
 import mip.data.ConnectedComponent;
 import mip.data.image.ColorImage;
 import mip.data.image.ColorImage.RGB;
+import static mip.view.swing.AbstractImagePanel.TOKEN;
 
 /**
  *
@@ -29,38 +32,61 @@ public class ColorImageFrame extends JFrame {
         setResizable(false);
     }
 
+    protected static final class ColorImagePanel extends AbstractImagePanel<ColorImage> {
+
+        public ColorImagePanel(ColorImage ci) {
+            this();
+            setImage(ci);
+        }
+
+        public ColorImagePanel() {
+            addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    if (img == null) {
+                        return;
+                    }
+
+                    int x = e.getX();
+                    int y = e.getY();
+
+                    int w = img.getWidth();
+                    int h = img.getHeight();
+
+                    if ((x < 0) || (x >= w) || (y < 0) || (y >= h)) {
+                        return;
+                    }
+                    setTitle(String.format("(%04d,%04d)=%s", x, y, img.getPixel(x, y)));
+                }
+            });
+        }
+
+        @Override
+        protected BufferedImage newBufferedImage(int w, int h) {
+            if ((bi == null) || (bi.getWidth() != w) || (bi.getHeight() != h)) {
+                return new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+            }
+            return bi;
+        }
+
+        @Override
+        protected void convertImageToBufferedImage() {
+            int[] data = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
+            int i = 0;
+            for (RGB v : img.getPixelArray(TOKEN)) {
+                data[i++] = ((v.R << 16) & 0x00FF0000) | ((v.G << 8) & 0x0000FF00) | (v.B & 0x000000FF);
+            }
+        }
+
+    }
+
     public static void main(String args[]) throws InterruptedException {
         ColorImage ci = new ColorImage(512, 512);
         for (int y = 0; y < ci.getHeight(); y++) {
             for (int x = 0; x < ci.getWidth(); x++) {
-                ci.setPixel(x, y, ConnectedComponent.getRandomColor());
+                ci.setPixel(x, y, ConnectedComponent.getColorFromPalette((x + y) % ConnectedComponent.PALETTESIZE));
             }
         }
         new ColorImageFrame(ci).setVisible(true);
     }
-}
-
-class ColorImagePanel extends AbstractImagePanel<ColorImage> {
-
-    public ColorImagePanel(ColorImage ci) {
-        setImage(ci);
-    }
-
-    @Override
-    protected BufferedImage newBufferedImage(int w, int h) {
-        if ((bi == null) || (bi.getWidth() != w) || (bi.getHeight() != h)) {
-            return new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-        }
-        return bi;
-    }
-
-    @Override
-    protected void convertImageToBufferedImage() {
-        int[] data = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
-        int i = 0;
-        for (RGB v : img.getPixelArray(TOKEN)) {
-            data[i++] = ((v.R << 16) & 0x00FF0000) | ((v.G << 8) & 0x0000FF00) | (v.B & 0x000000FF);
-        }
-    }
-
 }

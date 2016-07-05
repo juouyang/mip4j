@@ -100,6 +100,8 @@ public class BMRStudy {
 
     public static void main(String[] args) {
         File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
-        System.out.println(new BMRStudy(studyRoot.toPath()).getStudyID());
+        BMRStudy mrs = new BMRStudy(studyRoot.toPath());
+        System.out.println(mrs.getStudyID());
+        System.out.println(mrs.getPatientID());
     }
 }
