@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import mip.data.image.ShortImage;
 import mip.util.IOUtils;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class MR extends ShortImage {
 

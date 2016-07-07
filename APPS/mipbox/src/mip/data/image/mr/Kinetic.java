@@ -27,7 +27,7 @@ import mip.util.ImageJUtils;
 import mip.util.ROIUtils;
 import mip.util.Timer;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.math.DoubleRange;
+import org.apache.commons.lang3.Range;
 
 public class Kinetic {
 
@@ -38,7 +38,7 @@ public class Kinetic {
     private static final double Initial_Strong_Enhancement = 0.32; // TODO magic number
     private final double DELAYED_WASHOUT;
     private final double DELAYED_PLATEAU;
-    private final DoubleRange PLATEAU_RANGE;
+    private final Range<Double> PLATEAU_RANGE;
 
     private static final DecimalFormat df = new DecimalFormat(" 00.00;-00.00");
 
@@ -66,7 +66,7 @@ public class Kinetic {
         this.roiFile = roiFile;
         DELAYED_WASHOUT = delayedWashout;
         DELAYED_PLATEAU = delayedPlateau;
-        PLATEAU_RANGE = new DoubleRange(DELAYED_WASHOUT, DELAYED_PLATEAU);
+        PLATEAU_RANGE = Range.between(DELAYED_WASHOUT, DELAYED_PLATEAU);
         doColorMapping();
     }
 
@@ -243,7 +243,7 @@ public class Kinetic {
         if (initial > Glandular/* || peak > CONTRAST*/) {
             double R1 = initialPhase(initial, peak);
             double R2 = delayPhase(initial, delay) - R1;
-            if (PLATEAU_RANGE.containsDouble(R2)) {
+            if (PLATEAU_RANGE.contains(R2)) {
                 if (R1 < -0.4) {
                     return 4; // Fluid
                 } else if (R1 < -0.2) {
