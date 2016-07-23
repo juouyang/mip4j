@@ -39,38 +39,6 @@ public class MRSeries {
         checkSeriesNumber();
     }
 
-    private void checkSeriesNumber() {
-        seriesNumber = imageArrayXY[0].getSeriesNumber();
-        for (int i = 1; i < imageArrayXY.length; i++) {
-            try {
-                if (!imageArrayXY[i].getSeriesNumber().equalsIgnoreCase(seriesNumber)) {
-                    throw new IllegalArgumentException("The input dicom files contain more than one series.\n\t");
-                }
-            } catch (NullPointerException ignore) {
-            }
-        }
-    }
-
-    public MR[] getImageArrayXY() {
-        return imageArrayXY;
-    }
-
-    public int getWidth() {
-        return imageArrayXY[0].getWidth();
-    }
-
-    public int getHeight() {
-        return imageArrayXY[0].getHeight();
-    }
-
-    public int getSize() {
-        return imageArrayXY.length;
-    }
-
-    public short getPixel(int x, int y, int z) {
-        return imageArrayXY[z].getPixel(x, y);
-    }
-
     public ImagePlus toImagePlus(String title) {
         return new ImagePlus(title, ImageJUtils.getShortImageStackFromShortImageArray(imageArrayXY));
     }
@@ -107,6 +75,34 @@ public class MRSeries {
         }
     }
 
+    public static void main(String[] args) throws InterruptedException {
+        MRSeries mrs = new MRSeries(IOUtils.listFiles(IOUtils.getFileFromResources("resources/bmr/2/").getPath()));
+        mrs.show(mrs.getSize() / 2);
+        mrs.render();
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    public MR[] getImageArrayXY() {
+        return imageArrayXY;
+    }
+
+    public int getWidth() {
+        return imageArrayXY[0].getWidth();
+    }
+
+    public int getHeight() {
+        return imageArrayXY[0].getHeight();
+    }
+
+    public int getSize() {
+        return imageArrayXY.length;
+    }
+
+    public short getPixel(int x, int y, int z) {
+        return imageArrayXY[z].getPixel(x, y);
+    }
+    //</editor-fold>
+
     private static final class ReadMR implements Runnable {
 
         private final CountDownLatch doneSignal;
@@ -135,9 +131,15 @@ public class MRSeries {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        MRSeries mrs = new MRSeries(IOUtils.listFiles(IOUtils.getFileFromResources("resources/bmr/2/").getPath()));
-        mrs.show(mrs.getSize() / 2);
-        mrs.render();
+    private void checkSeriesNumber() {
+        seriesNumber = imageArrayXY[0].getSeriesNumber();
+        for (int i = 1; i < imageArrayXY.length; i++) {
+            try {
+                if (!imageArrayXY[i].getSeriesNumber().equalsIgnoreCase(seriesNumber)) {
+                    throw new IllegalArgumentException("The input dicom files contain more than one series.\n\t");
+                }
+            } catch (NullPointerException ignore) {
+            }
+        }
     }
 }

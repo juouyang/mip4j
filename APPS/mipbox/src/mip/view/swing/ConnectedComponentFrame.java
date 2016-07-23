@@ -9,18 +9,18 @@ import gnu.trove.map.TLongObjectMap;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import mip.data.ConnectedComponent;
+import mip.data.Component;
 import mip.data.image.BitImage;
-import mip.data.image.CCImage;
+import mip.data.image.ConnectedComponent;
 
 /**
  *
  * @author ju
  */
-public class CCImageFrame extends ColorImageFrame {
+public class ConnectedComponentFrame extends ColorImageFrame {
 
-    public CCImageFrame(final CCImage cci) {
-        super(cci.getColorImage());
+    public ConnectedComponentFrame(final ConnectedComponent cc) {
+        super(cc.getColorImage(false));
         super.imgPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -37,9 +37,9 @@ public class CCImageFrame extends ColorImageFrame {
 
                 String message = " (" + x + ", " + y + ") ";
 
-                TLongObjectMap<ConnectedComponent> componentTable = cci.getComponentTable();
-                long id = cci.getPixel(x, y);
-                ConnectedComponent c = componentTable.get(id);
+                TLongObjectMap<Component> componentTable = cc.getComponentTable();
+                long id = cc.getPixel(x, y);
+                Component c = componentTable.get(id);
 
                 if (c != null) {
                     message += c.toString();
@@ -58,7 +58,7 @@ public class CCImageFrame extends ColorImageFrame {
                 bi.setPixel(x, y, (x + y) % 64 > 32);
             }
         }
-        new CCImageFrame(new CCImage(bi)).setVisible(true);
+        new ConnectedComponentFrame(new ConnectedComponent(bi)).setVisible(true);
     }
 
 }

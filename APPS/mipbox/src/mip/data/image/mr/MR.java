@@ -1,6 +1,8 @@
 package mip.data.image.mr;
 
+import gdcm.Image;
 import gdcm.ImageReader;
+import gdcm.PixelFormat;
 import gdcm.StringFilter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,7 +28,7 @@ public class MR extends ShortImage {
                 throw new IOException("unable to read " + dcmFile);
             }
 
-            readGDCMPixels(reader, filter, "MR");
+            readGDCMPixels(reader, filter);
             flipVertically(pixelArray);
 
             try {
@@ -45,6 +47,13 @@ public class MR extends ShortImage {
         }
     }
 
+    public static void main(String[] args) throws IOException {
+        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
+        mr.show();
+        mr.getImagePlus("").show();
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public String getStudyID() {
         return studyID;
     }
@@ -70,12 +79,36 @@ public class MR extends ShortImage {
             System.arraycopy(sub, 0, pixelArray, y * width, width);
         }
     }
+    //</editor-fold>
 
-    public static void main(String[] args) {
-        try {
-            new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath()).show();
-        } catch (IOException ignore) {
+    private void readGDCMPixels(ImageReader reader, StringFilter filter) {
+        String modality = "MR";
+        // check modality
+        if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains(modality)) {
+            throw new IllegalArgumentException("not " + modality);
+        }
+
+        // check dimension
+        Image gImg = reader.GetImage();
+
+        if (gImg.GetNumberOfDimensions() != 2) {
+            throw new IllegalArgumentException("dimension is not 2");
+        }
+
+        width = (int) gImg.GetDimension(0);
+        height = (int) gImg.GetDimension(1);
+        pixelArray = new short[width * height];
+
+        // check pixel type
+        PixelFormat pixeltype = gImg.GetPixelFormat();
+
+        if ((pixeltype.GetScalarType() != PixelFormat.ScalarType.INT16) && (pixeltype.GetScalarType() != PixelFormat.ScalarType.UINT16)) {
+            throw new IllegalArgumentException("neither INT16 nor UINT16 image type");
+        }
+
+        // load pixel
+        if (!gImg.GetArray(pixelArray)) {
+            throw new IllegalArgumentException("unable to load pixel array");
         }
     }
-
 }

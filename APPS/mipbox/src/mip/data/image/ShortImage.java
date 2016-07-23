@@ -1,9 +1,5 @@
 package mip.data.image;
 
-import gdcm.Image;
-import gdcm.ImageReader;
-import gdcm.PixelFormat;
-import gdcm.StringFilter;
 import ij.ImagePlus;
 import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
@@ -33,34 +29,26 @@ public class ShortImage extends AbstractImage {
         pixelArray = pixels;
     }
 
-    protected void readGDCMPixels(ImageReader reader, StringFilter filter, String modality) {
-        // check modality
-        if (!filter.ToString(new gdcm.Tag(0x0008, 0x0060)).contains(modality)) {
-            throw new IllegalArgumentException("not " + modality);
+    @Override
+    public void show() {
+        new ShortImageFrame(this).setVisible(true);
+    }
+
+    public static void main(String[] args) throws Throwable {
+        ShortImage si = new ShortImage(512, 512);
+        for (int y = 0; y < si.getHeight(); y++) {
+            for (int x = 0; x < si.getWidth(); x++) {
+                si.setPixel(x, y, x * y % 512);
+            }
         }
+        si.show();
+        si.getImagePlus("").show();
+    }
 
-        // check dimension
-        Image gImg = reader.GetImage();
-
-        if (gImg.GetNumberOfDimensions() != 2) {
-            throw new IllegalArgumentException("dimension is not 2");
-        }
-
-        width = (int) gImg.GetDimension(0);
-        height = (int) gImg.GetDimension(1);
-        pixelArray = new short[width * height];
-
-        // check pixel type
-        PixelFormat pixeltype = gImg.GetPixelFormat();
-
-        if ((pixeltype.GetScalarType() != PixelFormat.ScalarType.INT16) && (pixeltype.GetScalarType() != PixelFormat.ScalarType.UINT16)) {
-            throw new IllegalArgumentException("neither INT16 nor UINT16 image type");
-        }
-
-        // load pixel
-        if (!gImg.GetArray(pixelArray)) {
-            throw new IllegalArgumentException("unable to load pixel array");
-        }
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    @Override
+    protected ImagePlus convertImageToImagePlus(String title) {
+        return new ImagePlus(title, ImageJUtils.getShortProcessorFromShortImage(this));
     }
 
     protected void setPixel(int x, int y, int v) {
@@ -122,24 +110,6 @@ public class ShortImage extends AbstractImage {
         }
         return windowWidth;
     }
+    //</editor-fold>
 
-    public void show() {
-        new ShortImageFrame(this).setVisible(true);
-    }
-
-    @Override
-    protected ImagePlus _getImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getShortProcessorFromShortImage(this));
-    }
-
-    public static void main(String[] args) {
-        ShortImage si = new ShortImage(512, 512);
-        for (int y = 0; y < si.getHeight(); y++) {
-            for (int x = 0; x < si.getWidth(); x++) {
-                si.setPixel(x, y, x * y % 512);
-            }
-        }
-        si.show();
-        si.getImagePlus("").show();
-    }
 }

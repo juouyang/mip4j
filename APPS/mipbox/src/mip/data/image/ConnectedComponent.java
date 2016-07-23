@@ -9,36 +9,132 @@ import ij.process.ColorProcessor;
 
 import java.awt.Color;
 import java.io.IOException;
-import mip.data.ConnectedComponent;
+import mip.data.Component;
 import mip.data.image.mr.MR;
 import mip.util.IOUtils;
-import mip.view.swing.CCImageFrame;
+import mip.view.swing.ConnectedComponentFrame;
 
 /**
  * @author ju Connected Component Labeling
  *
  */
-public class CCImage extends AbstractImage {
+public class ConnectedComponent extends AbstractImage {
 
     private ColorImage ci;
-
-    public ColorImage getColorImage() {
-        return ci;
-    }
-
     private long[] pixelArray = new long[1];
-    private TLongObjectMap<ConnectedComponent> componentHashTable;
-    private ConnectedComponent background;
+    private TLongObjectMap<Component> componentHashTable;
+    private Component background;
 
-    public CCImage(BitImage bi) {
+    public ConnectedComponent(BitImage bi) {
         width = bi.getWidth();
         height = bi.getHeight();
         pixelArray = new long[width * height];
-        ci = new ColorImage(width, height);
 
-        TLongObjectMap<ConnectedComponent> table = new TLongObjectHashMap<>();
+        connectedComponentLabeling(bi);
+        getColorImage(false);
+    }
 
-        ConnectedComponent bg = new ConnectedComponent();
+    public final ColorImage getColorImage(boolean renew) {
+        if (ci == null || renew) {
+            ci = new ColorImage(width, height);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    Component c = componentHashTable.get(getPixel(x, y));
+
+                    if (c.getID() == background.getID()) {
+                        continue;
+                    }
+
+                    ci.setPixel(x, y, c.getColor());
+                }
+            }
+        }
+        return ci;
+    }
+
+    @Override
+    public void show() {
+        new ConnectedComponentFrame(this).setVisible(true);
+    }
+
+    public static void main(String[] args) throws IOException {
+        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
+        BitImage bi = new BitImage(mr.width, mr.height);
+
+        int i = 0;
+        for (short s : mr.pixelArray) {
+            bi.pixelArray.set(i++, s > 1200);
+        }
+
+        ConnectedComponent cc = new ConnectedComponent(bi);
+        cc.show();
+        cc.getImagePlus("").show();
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    @Override
+    protected ImagePlus convertImageToImagePlus(String title) {
+        ColorProcessor ip = new ColorProcessor(width, height);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Component c = componentHashTable.get(getPixel(x, y));
+
+                if (c.getID() == background.getID()) {
+                    continue;
+                }
+
+                int r = c.getColor().getRed();
+                int g = c.getColor().getGreen();
+                int b = c.getColor().getBlue();
+
+                int rgb = ((r << 16) & 0x00FF0000) | ((g << 8) & 0x0000FF00) | (b
+                        & 0x000000FF);
+
+                ip.putPixel(x, y, rgb);
+            }
+        }
+
+        return new ImagePlus(ip.toString(), ip);
+    }
+
+    public void setPixel(int x, int y, long v) {
+        pixelArray[(y * width) + x] = v;
+    }
+
+    public long getPixel(int x, int y) {
+        return pixelArray[(y * width) + x];
+    }
+
+    public long[] getPixelArray() {
+        return pixelArray;
+    }
+
+    public TLongObjectMap<Component> getComponentTable() {
+        return componentHashTable;
+    }
+
+    public Component getBackgroundComponent() {
+        return background;
+    }
+
+    private void setComponentTable(TLongObjectMap<Component> componentTable) {
+        componentHashTable = componentTable;
+    }
+
+    private void setBackgroundComponent(Component background) {
+        this.background = background;
+    }
+    //</editor-fold>
+
+    private boolean validCoordinate(int x, int y) {
+        return (x >= 0) && (x < width) && (y >= 0) && (y < height);
+    }
+
+    private void connectedComponentLabeling(BitImage bi) {
+        TLongObjectMap<Component> table = new TLongObjectHashMap<>();
+
+        Component bg = new Component();
         bg.setColor(Color.BLACK);
 
         TIntStack stack = new TIntArrayStack(width, height);
@@ -55,7 +151,7 @@ public class CCImage extends AbstractImage {
                         stack.push(pixelIndex);
 
                         // new component
-                        ConnectedComponent c = new ConnectedComponent();
+                        Component c = new Component();
                         int count = 0;
 
                         while (!(stack.size() == 0)) {
@@ -64,7 +160,6 @@ public class CCImage extends AbstractImage {
                             int currentY = currentIndex / width;
 
                             pixelArray[(currentY * width) + currentX] = c.getID();
-                            ci.setPixel(currentX, currentY, c.getColor());
                             count++;
 
                             if (currentX < c.getMinX()) {
@@ -96,7 +191,6 @@ public class CCImage extends AbstractImage {
                                         stack.push(newIndex);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
-                                        ci.setPixel(x, y, bg.getColor());
                                     }
                                 }
                             } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
@@ -115,7 +209,6 @@ public class CCImage extends AbstractImage {
                                         stack.push(newIndex);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
-                                        ci.setPixel(x, y, bg.getColor());
                                     }
                                 }
                             } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
@@ -134,7 +227,6 @@ public class CCImage extends AbstractImage {
                                         stack.push(newIndex);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
-                                        ci.setPixel(x, y, bg.getColor());
                                     }
                                 }
                             } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
@@ -153,7 +245,6 @@ public class CCImage extends AbstractImage {
                                         stack.push(newIndex);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
-                                        ci.setPixel(x, y, bg.getColor());
                                     }
                                 }
                             } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
@@ -164,7 +255,6 @@ public class CCImage extends AbstractImage {
                         table.put(c.getID(), c);
                     } else {
                         pixelArray[(y * width) + x] = bg.getID();
-                        ci.setPixel(x, y, bg.getColor());
                     }
                 }
             } // end for
@@ -173,81 +263,6 @@ public class CCImage extends AbstractImage {
         table.put(bg.getID(), bg);
         setBackgroundComponent(bg);
         setComponentTable(table);
-    }
-
-    public void setPixel(int x, int y, long v) {
-        pixelArray[(y * width) + x] = v;
-    }
-
-    public long getPixel(int x, int y) {
-        return pixelArray[(y * width) + x];
-    }
-
-    public long[] getPixelArray() {
-        return pixelArray;
-    }
-
-    public TLongObjectMap<ConnectedComponent> getComponentTable() {
-        return componentHashTable;
-    }
-
-    public ConnectedComponent getBackgroundComponent() {
-        return background;
-    }
-
-    private void setComponentTable(TLongObjectMap<ConnectedComponent> componentTable) {
-        componentHashTable = componentTable;
-    }
-
-    private void setBackgroundComponent(ConnectedComponent background) {
-        this.background = background;
-    }
-
-    private boolean validCoordinate(int x, int y) {
-        return (x >= 0) && (x < width) && (y >= 0) && (y < height);
-    }
-
-    public void show() {
-        new CCImageFrame(this).setVisible(true);
-    }
-
-    @Override
-    protected ImagePlus _getImagePlus(String title) {
-        ColorProcessor ip = new ColorProcessor(width, height);
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                ConnectedComponent c = componentHashTable.get(getPixel(x, y));
-
-                if (c.getID() == background.getID()) {
-                    continue;
-                }
-
-                int r = c.getColor().getRed();
-                int g = c.getColor().getGreen();
-                int b = c.getColor().getBlue();
-
-                int rgb = ((r << 16) & 0x00FF0000) | ((g << 8) & 0x0000FF00) | (b
-                        & 0x000000FF);
-
-                ip.putPixel(x, y, rgb);
-            }
-        }
-
-        return new ImagePlus(ip.toString(), ip);
-    }
-
-    public static void main(String[] args) throws IOException {
-        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
-        BitImage bi = new BitImage(mr.width, mr.height);
-
-        int i = 0;
-        for (short s : mr.pixelArray) {
-            bi.pixelArray.set(i++, s > 1200);
-        }
-
-        CCImage cci = new CCImage(bi);
-        cci.show();
     }
 
 }

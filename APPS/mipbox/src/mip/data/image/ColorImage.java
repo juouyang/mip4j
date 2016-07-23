@@ -2,7 +2,7 @@ package mip.data.image;
 
 import ij.ImagePlus;
 import java.awt.Color;
-import mip.data.ConnectedComponent;
+import mip.data.Component;
 import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ColorImageFrame;
@@ -39,6 +39,28 @@ public class ColorImage extends AbstractImage {
         pixelArray = pixels;
     }
 
+    @Override
+    public void show() {
+        new ColorImageFrame(this).setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        ColorImage ci = new ColorImage(512, 512);
+        for (int y = 0; y < ci.getHeight(); y++) {
+            for (int x = 0; x < ci.getWidth(); x++) {
+                ci.setPixel(x, y, Component.getRandomColor());
+            }
+        }
+        ci.show();
+        ci.getImagePlus("").show();
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    @Override
+    protected ImagePlus convertImageToImagePlus(String title) {
+        return new ImagePlus(title, ImageJUtils.getColorProcessorFromColorImage(this));
+    }
+
     public void setPixel(int x, int y, int r, int g, int b) {
         int i = (y * width) + x;
 
@@ -63,24 +85,6 @@ public class ColorImage extends AbstractImage {
         token.hashCode();
         return pixelArray;
     }
+    //</editor-fold>
 
-    public void show() {
-        new ColorImageFrame(this).setVisible(true);
-    }
-
-    @Override
-    protected ImagePlus _getImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getColorProcessorFromColorImage(this));
-    }
-
-    public static void main(String[] args) {
-        ColorImage ci = new ColorImage(512, 512);
-        for (int y = 0; y < ci.getHeight(); y++) {
-            for (int x = 0; x < ci.getWidth(); x++) {
-                ci.setPixel(x, y, ConnectedComponent.getRandomColor());
-            }
-        }
-        ci.show();
-        ci.getImagePlus("").show();
-    }
 }

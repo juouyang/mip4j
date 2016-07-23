@@ -26,6 +26,14 @@ public class BMRStudy {
         t.printElapsedTime("BMRStudy");
     }
 
+    public static void main(String[] args) {
+        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        BMRStudy mrs = new BMRStudy(studyRoot.toPath());
+        System.out.println(mrs.getStudyID());
+        System.out.println(mrs.getPatientID());
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public String getPatientID() {
         return patientID;
     }
@@ -46,6 +54,7 @@ public class BMRStudy {
                 throw new IllegalArgumentException();
         }
     }
+    //</editor-fold>
 
     private void read_dicom_files(Path studyRoot) {
         final Path p2 = studyRoot.resolve("2");
@@ -98,10 +107,4 @@ public class BMRStudy {
         }
     }
 
-    public static void main(String[] args) {
-        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
-        BMRStudy mrs = new BMRStudy(studyRoot.toPath());
-        System.out.println(mrs.getStudyID());
-        System.out.println(mrs.getPatientID());
-    }
 }

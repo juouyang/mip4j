@@ -11,7 +11,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import javax.swing.JFrame;
-import mip.data.ConnectedComponent;
+import mip.data.Component;
 import mip.data.image.ColorImage;
 import mip.data.image.ColorImage.RGB;
 import static mip.view.swing.AbstractImagePanel.TOKEN;
@@ -84,7 +84,7 @@ public class ColorImageFrame extends JFrame {
         ColorImage ci = new ColorImage(512, 512);
         for (int y = 0; y < ci.getHeight(); y++) {
             for (int x = 0; x < ci.getWidth(); x++) {
-                ci.setPixel(x, y, ConnectedComponent.getColorFromPalette((x + y) % ConnectedComponent.PALETTESIZE));
+                ci.setPixel(x, y, Component.getColorFromPalette((x + y) % Component.PALETTESIZE));
             }
         }
         new ColorImageFrame(ci).setVisible(true);

@@ -70,9 +70,98 @@ public class Kinetic {
         doColorMapping();
     }
 
-    private boolean hasROI() {
-        return !rois.isEmpty();
+    public void save() throws IOException {
+        FileSaver fs = new FileSaver(imp);
+        fs.saveAsTiffStack(mrStudy.studyRoot + "/cm.tif");
+        FileUtils.writeStringToFile(new File(mrStudy.studyRoot + "/result.txt"), result.toString());
     }
+
+    public void show() {
+        ImageJ ij = new ImageJ();
+        ij.exitWhenQuitting(true);
+
+        if (roiFile != null) {
+            new Opener().openZip(roiFile);
+        }
+        imp.show();
+        imp.getCanvas().addMouseMotionListener(new MouseAdapter() {
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+
+                final int Z = imp.getCurrentSlice() - 1;
+                final int X = imp.getCanvas().getCursorLoc().x;
+                final int Y = imp.getCanvas().getCursorLoc().y;
+
+                imp.setTitle(getColorMappingInfo(X, Y, Z));
+                super.mouseMoved(e);
+            }
+
+        });
+        imp.getCanvas().addMouseWheelListener(new MouseAdapter() {
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                final int Z = imp.getCurrentSlice() - 1;
+                final int X = imp.getCanvas().getCursorLoc().x;
+                final int Y = imp.getCanvas().getCursorLoc().y;
+
+                imp.setTitle(getColorMappingInfo(X, Y, Z));
+                super.mouseWheelMoved(e);
+            }
+        });
+        imp.setPosition(mrStudy.mrs2.getSize() / 2);
+    }
+
+    public void render() {
+        Image3DUniverse univ = new Image3DUniverse();
+        ContentInstant ci = univ.addVoltex(imp, 1).getCurrent();
+
+        if (ci != null) {
+            univ.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        final Kinetic cm = new Kinetic(new BMRStudy(studyRoot.toPath()));
+        cm.show();
+        cm.render();
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    public int getKinetic(int x, int y, int z) {
+        return mapping(mrStudy.getPixel(x, y, z, 0), mrStudy.getPixel(x, y, z, 1), mrStudy.getPixel(x, y, z, 2));
+    }
+
+    private String getColorMappingInfo(int x, int y, int z) {
+        final short initial = mrStudy.getPixel(x, y, z, 0);
+        final short peak = mrStudy.getPixel(x, y, z, 1);
+        final short delay = mrStudy.getPixel(x, y, z, 2);
+        final double R1 = Kinetic.initialPhase(initial, peak);
+        final double R2 = Kinetic.delayPhase(initial, delay) - R1;
+        return String.format("(%03d,%03d,%03d) = %04d -> %04d -> %04d, R1=%s, R2=%s, %s", x, y, z + 1, initial, peak, delay, df.format(R1), df.format(R2), getMappingDesc(initial, peak, delay));
+    }
+
+    private String getMappingDesc(int initial, int peak, int delay) {
+        switch (mapping(initial, peak, delay)) {
+            case 0:
+                return "Enhanced";
+            case 1:
+                return "Washout";
+            case 2:
+                return "Plateau";
+            case 3:
+                return "Persistent";
+            case 4:
+                return "Fluid";
+            case 5:
+                return "Edema";
+            default:
+                return "Unmapped";
+        }
+    }
+    //</editor-fold>
 
     private void doColorMapping() {
         Timer t = new Timer();
@@ -231,6 +320,10 @@ public class Kinetic {
         t.printElapsedTime("ColorMapping");
     }
 
+    private boolean hasROI() {
+        return !rois.isEmpty();
+    }
+
     private static double initialPhase(int initial, int peak) {
         return (double) (peak - initial) / (double) initial;
     }
@@ -267,94 +360,4 @@ public class Kinetic {
         return 6; // Unmapped (Noise)
     }
 
-    private String mappingDesc(int initial, int peak, int delay) {
-        switch (mapping(initial, peak, delay)) {
-            case 0:
-                return "Enhanced";
-            case 1:
-                return "Washout";
-            case 2:
-                return "Plateau";
-            case 3:
-                return "Persistent";
-            case 4:
-                return "Fluid";
-            case 5:
-                return "Edema";
-            default:
-                return "Unmapped";
-        }
-    }
-
-    private String colorMappingInfo(int x, int y, int z) {
-        final short initial = mrStudy.getPixel(x, y, z, 0);
-        final short peak = mrStudy.getPixel(x, y, z, 1);
-        final short delay = mrStudy.getPixel(x, y, z, 2);
-        final double R1 = Kinetic.initialPhase(initial, peak);
-        final double R2 = Kinetic.delayPhase(initial, delay) - R1;
-        return String.format("(%03d,%03d,%03d) = %04d -> %04d -> %04d, R1=%s, R2=%s, %s", x, y, z + 1, initial, peak, delay, df.format(R1), df.format(R2), mappingDesc(initial, peak, delay));
-    }
-
-    public void save() throws IOException {
-        FileSaver fs = new FileSaver(imp);
-        fs.saveAsTiffStack(mrStudy.studyRoot + "/cm.tif");
-        FileUtils.writeStringToFile(new File(mrStudy.studyRoot + "/result.txt"), result.toString());
-    }
-
-    public void show() {
-        ImageJ ij = new ImageJ();
-        ij.exitWhenQuitting(true);
-
-        if (roiFile != null) {
-            new Opener().openZip(roiFile);
-        }
-        imp.show();
-        imp.getCanvas().addMouseMotionListener(new MouseAdapter() {
-
-            @Override
-            public void mouseMoved(MouseEvent e) {
-
-                final int Z = imp.getCurrentSlice() - 1;
-                final int X = imp.getCanvas().getCursorLoc().x;
-                final int Y = imp.getCanvas().getCursorLoc().y;
-
-                imp.setTitle(colorMappingInfo(X, Y, Z));
-                super.mouseMoved(e);
-            }
-
-        });
-        imp.getCanvas().addMouseWheelListener(new MouseAdapter() {
-
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-                final int Z = imp.getCurrentSlice() - 1;
-                final int X = imp.getCanvas().getCursorLoc().x;
-                final int Y = imp.getCanvas().getCursorLoc().y;
-
-                imp.setTitle(colorMappingInfo(X, Y, Z));
-                super.mouseWheelMoved(e);
-            }
-        });
-        imp.setPosition(mrStudy.mrs2.getSize() / 2);
-    }
-
-    public void render() {
-        Image3DUniverse univ = new Image3DUniverse();
-        ContentInstant ci = univ.addVoltex(imp, 1).getCurrent();
-
-        if (ci != null) {
-            univ.show();
-        }
-    }
-
-    public int getKinetic(int x, int y, int z) {
-        return mapping(mrStudy.getPixel(x, y, z, 0), mrStudy.getPixel(x, y, z, 1), mrStudy.getPixel(x, y, z, 2));
-    }
-
-    public static void main(String[] args) {
-        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
-        final Kinetic cm = new Kinetic(new BMRStudy(studyRoot.toPath()));
-        cm.show();
-        cm.render();
-    }
 }

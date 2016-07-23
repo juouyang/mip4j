@@ -25,30 +25,9 @@ public class BitImage extends AbstractImage {
         pixelArray = new BitSet(width * height);
     }
 
-    public void setPixel(int x, int y, boolean v) {
-        pixelArray.set((y * width) + x, v);
-    }
-
-    public boolean getPixel(int x, int y) {
-        return pixelArray.get((y * width) + x);
-    }
-
-    public BitSet getPixelArray(AbstractImagePanel.VIEW_ACCESS_TOKEN token) {
-        token.hashCode();
-        return pixelArray;
-    }
-
+    @Override
     public void show() {
         new BitImageFrame(this).setVisible(true);
-    }
-
-    @Override
-    public ImagePlus _getImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getByteProcessorFromBitImage(this));
-    }
-
-    public Roi getRoi() {
-        return ROIUtils.createSelectionFromThreshold(getImagePlus("").getProcessor(), 255, 255);
     }
 
     public static void main(String[] args) throws IOException {
@@ -67,5 +46,29 @@ public class BitImage extends AbstractImage {
         mrips.setRoi(bi.getRoi());
         mrips.show();
     }
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    @Override
+    protected ImagePlus convertImageToImagePlus(String title) {
+        return new ImagePlus(title, ImageJUtils.getByteProcessorFromBitImage(this));
+    }
+
+    public void setPixel(int x, int y, boolean v) {
+        pixelArray.set((y * width) + x, v);
+    }
+
+    public boolean getPixel(int x, int y) {
+        return pixelArray.get((y * width) + x);
+    }
+
+    public BitSet getPixelArray(AbstractImagePanel.VIEW_ACCESS_TOKEN token) {
+        token.hashCode();
+        return pixelArray;
+    }
+
+    public Roi getRoi() {
+        return ROIUtils.createSelectionFromThreshold(getImagePlus("").getProcessor(), 255, 255);
+    }
+    //</editor-fold>
 
 }

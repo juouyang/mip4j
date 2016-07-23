@@ -13,6 +13,11 @@ public abstract class AbstractImage {
         height = 1;
     }
 
+    public abstract void show();
+
+    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    protected abstract ImagePlus convertImageToImagePlus(String title);
+
     public int getWidth() {
         return width;
     }
@@ -21,12 +26,12 @@ public abstract class AbstractImage {
         return height;
     }
 
-    protected abstract ImagePlus _getImagePlus(String title);
-
     public final ImagePlus getImagePlus(String title) {
         if (ips == null) {
-            ips = _getImagePlus(title);
+            ips = convertImageToImagePlus(title);
         }
         return ips;
     }
+    //</editor-fold>
+
 }

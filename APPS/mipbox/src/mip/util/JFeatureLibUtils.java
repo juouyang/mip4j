@@ -32,31 +32,6 @@ public class JFeatureLibUtils {
     private JFeatureLibUtils() { // singleton
     }
 
-    public static void main(String[] args) {
-        System.out.println(new AutoColorCorrelogram().supports().contains(Supports.DOES_16));
-        System.out.println(new ColorHistogram().supports().contains(Supports.DOES_16));
-        System.out.println(new Moments().supports().contains(Supports.DOES_16));
-        System.out.println(new PHOG().supports().contains(Supports.DOES_16));
-        System.out.println(new ReferenceColorSimilarity().supports().contains(Supports.DOES_16));
-
-        System.out.println(new Canny().supports().contains(Supports.DOES_16));
-        System.out.println(new DroG().supports().contains(Supports.DOES_16));
-        System.out.println(new Kernel().supports().contains(Supports.DOES_16));
-        System.out.println(new Roberts().supports().contains(Supports.DOES_16));
-
-        System.out.println(new FASTCornerDetector().supports().contains(Supports.DOES_16));
-
-        System.out.println(new AdaptiveGridResolution(1).supports().contains(Supports.DOES_16));
-        System.out.println(new CentroidBoundaryDistance().supports().contains(Supports.DOES_16));
-        System.out.println(new CentroidFeature().supports().contains(Supports.DOES_16));
-        System.out.println(new Compactness().supports().contains(Supports.DOES_16));
-        System.out.println(new Eccentricity().supports().contains(Supports.DOES_16));
-        System.out.println(new ExtremalPoints().supports().contains(Supports.DOES_16));
-        System.out.println(new PolygonEvolution().supports().contains(Supports.DOES_16));
-        System.out.println(new Profiles().supports().contains(Supports.DOES_16));
-        System.out.println(new SquareModelShapeMatrix().supports().contains(Supports.DOES_16));
-    }
-
     public static double[] getPHOG(ImageProcessor ip, int bins, int recursions, Roi roi) {
         PHOG phog = new PHOG();
 
@@ -86,5 +61,30 @@ public class JFeatureLibUtils {
         }
 
         return fs.get(0);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new AutoColorCorrelogram().supports().contains(Supports.DOES_16));
+        System.out.println(new ColorHistogram().supports().contains(Supports.DOES_16));
+        System.out.println(new Moments().supports().contains(Supports.DOES_16));
+        System.out.println(new PHOG().supports().contains(Supports.DOES_16));
+        System.out.println(new ReferenceColorSimilarity().supports().contains(Supports.DOES_16));
+
+        System.out.println(new Canny().supports().contains(Supports.DOES_16));
+        System.out.println(new DroG().supports().contains(Supports.DOES_16));
+        System.out.println(new Kernel().supports().contains(Supports.DOES_16));
+        System.out.println(new Roberts().supports().contains(Supports.DOES_16));
+
+        System.out.println(new FASTCornerDetector().supports().contains(Supports.DOES_16));
+
+        System.out.println(new AdaptiveGridResolution(1).supports().contains(Supports.DOES_16));
+        System.out.println(new CentroidBoundaryDistance().supports().contains(Supports.DOES_16));
+        System.out.println(new CentroidFeature().supports().contains(Supports.DOES_16));
+        System.out.println(new Compactness().supports().contains(Supports.DOES_16));
+        System.out.println(new Eccentricity().supports().contains(Supports.DOES_16));
+        System.out.println(new ExtremalPoints().supports().contains(Supports.DOES_16));
+        System.out.println(new PolygonEvolution().supports().contains(Supports.DOES_16));
+        System.out.println(new Profiles().supports().contains(Supports.DOES_16));
+        System.out.println(new SquareModelShapeMatrix().supports().contains(Supports.DOES_16));
     }
 }
