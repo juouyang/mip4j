@@ -23,6 +23,7 @@ package mip.util;
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+import java.nio.file.Path;
 import java.util.Comparator;
 
 /**
@@ -38,7 +39,7 @@ import java.util.Comparator;
  * java.util.Collections class: Collections.sort(your list, new
  * AlphanumComparator());
  */
-public class AlphanumComparator implements Comparator<String> {
+public class AlphanumComparator implements Comparator<Path> {
 
     private static boolean isDigit(char ch) {
         return ch >= 48 && ch <= 57;
@@ -76,9 +77,11 @@ public class AlphanumComparator implements Comparator<String> {
     }
 
     @Override
-    public int compare(String s1, String s2) {
+    public int compare(Path p1, Path p2) {
         int thisMarker = 0;
         int thatMarker = 0;
+        String s1 = p1.toString();
+        String s2 = p2.toString();
         int s1Length = s1.length();
         int s2Length = s2.length();
 

@@ -10,9 +10,11 @@ import ij3d.Image3DUniverse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
 
 import mip.util.ImageJUtils;
@@ -24,6 +26,7 @@ public class MRSeries {
     private String seriesNumber;
 
     public MRSeries(final ArrayList<Path> dcmFiles) throws InterruptedException {
+        Collections.sort(dcmFiles, new AlphanumComparator());       
         imageArrayXY = new MR[dcmFiles.size()];
 
         CountDownLatch latch = new CountDownLatch(dcmFiles.size());
