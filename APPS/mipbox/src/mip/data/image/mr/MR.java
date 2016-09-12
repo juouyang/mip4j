@@ -6,13 +6,18 @@ import gdcm.PixelFormat;
 import gdcm.StringFilter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import mip.data.image.ShortImage;
 import mip.util.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class MR extends ShortImage {
 
+    private static final DateTimeFormatter DT_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
     private String studyID;
+    private LocalDate studyDate;
     private String seriesNumber;
     private String instanceNumber;
     private String patientID;
@@ -38,6 +43,7 @@ public class MR extends ShortImage {
                 windowCenter = Integer.parseInt(filter.ToString(new gdcm.Tag(0x0028, 0x1050)).trim());
                 windowWidth = Integer.parseInt(filter.ToString(new gdcm.Tag(0x0028, 0x1051)).trim());
                 patientID = filter.ToString(new gdcm.Tag(0x0010, 0x0020)).trim();
+                studyDate = LocalDate.parse(filter.ToString(new gdcm.Tag(0x0008, 0x0020)).trim(), DT_FORMATTER);
             } catch (NumberFormatException ignore) {
             }
         } catch (IOException | IllegalArgumentException ignore) {
@@ -56,6 +62,10 @@ public class MR extends ShortImage {
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public String getStudyID() {
         return studyID;
+    }
+
+    public LocalDate getStudyDate() {
+        return studyDate;
     }
 
     public String getSeriesNumber() {

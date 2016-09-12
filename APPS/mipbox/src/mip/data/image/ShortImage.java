@@ -1,6 +1,8 @@
 package mip.data.image;
 
 import ij.ImagePlus;
+import mip.data.image.mr.MR;
+import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ShortImageFrame;
@@ -35,10 +37,12 @@ public class ShortImage extends AbstractImage {
     }
 
     public static void main(String[] args) throws Throwable {
+        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
+        mr.show();
         ShortImage si = new ShortImage(512, 512);
         for (int y = 0; y < si.getHeight(); y++) {
             for (int x = 0; x < si.getWidth(); x++) {
-                si.setPixel(x, y, x * y % 512);
+                si.setPixel(x, y, 4000 - mr.getPixel(x, y));
             }
         }
         si.show();

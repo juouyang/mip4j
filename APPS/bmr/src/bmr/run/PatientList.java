@@ -21,6 +21,7 @@ public class PatientList {
     public static void main(String[] args) {
         final HashMap<String, String> table = new HashMap<>();
         final HashSet<Path> studies = new HashSet<>();
+        System.out.println(args[0]);
 
         for (Path fn : IOUtils.listFiles(args[0])) {
             try {
@@ -29,7 +30,7 @@ public class PatientList {
                     studies.add(studyRoot);
                     MR mr = new MR(fn);
                     Path hospital = studyRoot.getParent().getFileName();
-                    table.put(hospital + "\t" + mr.getStudyID(), mr.getPatientID());
+                    table.put(hospital + "\t" + mr.getStudyID() + "\t" + mr.getStudyDate(), mr.getPatientID());
 
                 }
             } catch (IOException ex) {

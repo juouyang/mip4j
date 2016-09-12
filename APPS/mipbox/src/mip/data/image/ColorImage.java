@@ -2,7 +2,10 @@ package mip.data.image;
 
 import ij.ImagePlus;
 import java.awt.Color;
+import java.io.IOException;
 import mip.data.Component;
+import mip.data.image.mr.MR;
+import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ColorImageFrame;
@@ -44,12 +47,12 @@ public class ColorImage extends AbstractImage {
         new ColorImageFrame(this).setVisible(true);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
         ColorImage ci = new ColorImage(512, 512);
-        for (int y = 0; y < ci.getHeight(); y++) {
-            for (int x = 0; x < ci.getWidth(); x++) {
-                ci.setPixel(x, y, Component.getRandomColor());
-            }
+        int i = 0;
+        for (Short s : mr.pixelArray) {
+            ci.pixelArray[i++].G = (short) ((s > 1500) ? 255 : 0);
         }
         ci.show();
         ci.getImagePlus("").show();
