@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MONTHS;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -44,9 +46,9 @@ public class DATA {
     static int countTMUH = 0;
 
     public static void main(String args[]) throws UnsupportedEncodingException, IOException, IllegalArgumentException, IllegalAccessException {
+
         Map<String, List<DATA.MRStudy>> mrStudyList = new HashMap<>();
         try (BufferedReader in = new BufferedReader(new FileReader("/home/ju/pList.txt"))) {
-            StringBuilder sb = new StringBuilder();
             while (true) {
                 String line = in.readLine();
                 if (line == null) {
@@ -54,10 +56,10 @@ public class DATA {
                 }
                 String[] tokens = line.split("\t");
                 MRStudy mrs = new MRStudy();
-                mrs.hospital = (tokens.length >= 1) ? tokens[0] : "ERRR";
-                mrs.studyID = (tokens.length >= 2) ? tokens[1] : "00000";
+                mrs.hospital = (tokens.length >= 1) ? tokens[0].trim() : "ERRR";
+                mrs.studyID = (tokens.length >= 2) ? tokens[1].trim() : "00000";
                 mrs.scanDate = (tokens.length >= 3) ? LocalDate.parse(tokens[2].trim(), DT_FORMATTER) : LocalDate.MIN;
-                mrs.patientID = (tokens.length >= 4) ? tokens[3] : "00000000";
+                mrs.patientID = (tokens.length >= 4) ? tokens[3].trim() : "00000000";
 
                 if (mrStudyList.get(mrs.patientID) != null) {
                     mrStudyList.get(mrs.patientID).add(mrs);
@@ -70,7 +72,7 @@ public class DATA {
         }
 
         List<DATA.Pathology> pathologyList = new ArrayList<>();
-        try (BufferedReader in = new BufferedReader(new FileReader("/home/ju/TMUH_DATA"))) {
+        try (BufferedReader in = new BufferedReader(new FileReader("/home/ju/" + HOSPITAL + (HOSPITAL.length() == 0 ? "" : "_") + "DATA"))) {
             while (true) {
                 String line = in.readLine();
                 if (line == null) {
@@ -150,8 +152,11 @@ public class DATA {
                         doctor = (tokens.length == 2) ? tokens[1] : "UNKNOWN";
 
                         Pathology p = new Pathology();
+
                         p.patientID = pid;
                         p.diagnosis = StringUtils.replace(StringUtils.replace(diagnosis, "\"", "'").trim(), "病理診斷：", "");
+                        p.isHER2Only = p.diagnosis.startsWith("The HER");
+                        p.isHER2Fail = p.isHER2Only && (StringUtils.containsIgnoreCase(p.diagnosis, "Indeterminate") || StringUtils.containsIgnoreCase(p.diagnosis, "NOT amplified"));
                         p.pathologyID = pathologyID;
                         p.biopsyDate = LocalDate.parse(biopsyDate.trim(), DT_FORMATTER);
                         p.isCoreNeedleBiopsy = true;
@@ -180,15 +185,33 @@ public class DATA {
                                 break;
                             }
                         }
+
+                        if (!p.hasIDC && !p.hasDCIS && !p.hasILC && !p.hasBenign) {
+                            if (StringUtils.containsIgnoreCase(pathology, "invasive") || StringUtils.containsIgnoreCase(pathology, "carcinoma")) {
+                                int start = StringUtils.indexOfIgnoreCase(pathology, "microscop");
+                                start = start >= 0 ? start : 0;
+                                int end = StringUtils.indexOfIgnoreCase(pathology, IMMUNO_KEYWORD);
+                                int refIndex = StringUtils.indexOfIgnoreCase(pathology, "Reference");
+                                if (refIndex > 0) {
+                                    end = refIndex;
+                                }
+                                end = end >= start ? end : Math.min(pathology.length(), start + 500); // TODO: magic number search for diagnosis
+                                String microscopeText = pathology.substring(start, end);
+                                p.hasIDC = StringUtils.containsIgnoreCase(microscopeText, BREAST_MALIGNANT_TYPES[0]);
+                                p.hasDCIS = StringUtils.containsIgnoreCase(microscopeText, BREAST_MALIGNANT_TYPES[1]);
+                                if (StringUtils.containsIgnoreCase(microscopeText, "lobular") || StringUtils.containsIgnoreCase(microscopeText, "tubular")) {
+                                    p.hasILC = true;
+                                }
+                                //DBG.accept(p.pathologyID + "\t" + start + "\t" + end + "\t" + microscopeText + "\n");
+                            }
+                        }
+
                         p.doctor = doctor;
                         p.pathology = StringUtils.replace(StringUtils.replace(pathology, "\"", "'").trim(), "組織報告：", "");
                         p.hasPathlogicStaging = StringUtils.containsIgnoreCase(pathology, PATHOLOGY_KEYWORD);
+
                         p.immunohistochemicalStudyCount = StringUtils.countMatches(pathology, IMMUNO_KEYWORD);
                         p.immunohistochemicalStudy = (p.immunohistochemicalStudyCount > 0) ? StringUtils.replace(immunohistochemicalText, "\"", "'").trim() : "-";
-                        p.ki67 = ki67;
-                        p.ki67Text = ki67Text.equals("") ? "-" : ki67Text.trim();
-                        p.her2 = her2;
-                        p.her2Text = her2Text.equals("") ? "-" : her2Text.trim();
                         // ER in multiple lines
                         if (er == Integer.MIN_VALUE && !erText.equals("")) {
                             erText = "*****\n" + erText.replace("-", " - ").replace(" %", "%");
@@ -213,6 +236,40 @@ public class DATA {
                         }
                         p.pr = pr;
                         p.prText = prText.equals("") ? "-" : prText.trim();
+                        p.ki67 = ki67;
+                        p.ki67Text = ki67Text.equals("") ? "-" : ki67Text.trim();
+                        p.her2 = her2;
+                        p.her2Text = her2Text.equals("") ? "-" : her2Text.trim();
+
+                        p.studyID = "";
+                        p.scanDate = LocalDate.of(1900, 01, 01);
+                        if (mrStudyList.containsKey(p.patientID)) {
+                            MRStudy mrs = MRStudy.getClosestMRStudy(mrStudyList.get(p.patientID), p.biopsyDate);
+                            if (mrs != null) {
+                                p.studyID = mrs.studyID;
+                                p.scanDate = mrs.scanDate;
+                            }
+
+//                            for (MRStudy mrs : mrStudyList.get(p.patientID)) {
+//                                p.studyCount++;
+//                                //DBG.accept("\t" + mrs);
+//
+//                                long daysBetween = Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate));
+//                                if (daysBetween < p.daysBetween) {
+//                                    p.daysBetween = daysBetween;
+//                                    p.studyID = mrs.studyID;
+//                                    p.scanDate = mrs.scanDate;
+//                                }
+//                            }
+//
+//                            if (Math.abs(MONTHS.between(p.scanDate, p.biopsyDate)) > 6) { // TODO: magic number six month
+//                                p.studyCount = 0;
+//                                p.studyID = "";
+//                                p.scanDate = LocalDate.of(1900, 01, 01);
+//                                p.daysBetween = Long.MAX_VALUE;
+//                            }
+                        }
+                        //DBG.accept(p.pathologyID + "\t" + p.studyCount + "\t" + p.studyID + "\t" + p.daysBetween + "\n");
 
                         pathologyList.add(p);
                     }
@@ -262,7 +319,8 @@ public class DATA {
                             int scoreIndex = StringUtils.indexOfIgnoreCase(s, "score");
                             int start = her2Index >= 0 && her2Index < scoreIndex ? her2Index : 0;
                             her2Text = StringUtils.substring(s, start);
-                            int end = her2Text.contains(")") ? her2Text.indexOf(")") + 1 : StringUtils.indexOfIgnoreCase(her2Text, "score") + 9;
+                            //int end = her2Text.contains(")") ? her2Text.indexOf(")") + 1 : StringUtils.indexOfIgnoreCase(her2Text, "score") + 9;
+                            int end = Math.min(her2Text.contains(")") ? her2Text.indexOf(")") + 1 : her2Text.length(), StringUtils.indexOfIgnoreCase(her2Text, "score") + 9); // "TH1102673"
                             her2Text = StringUtils.substring(her2Text, 0, end).replace("-", " - ").replace(" %", "%");
                             her2Text = (her2Text.indexOf(":") == 0) ? her2Text.substring(1).trim().toLowerCase() : her2Text.trim().toLowerCase();
                             her2 = Pathology.parseHER2(her2Text);
@@ -350,13 +408,333 @@ public class DATA {
             }
         }
 
-        StringBuilder sb = new StringBuilder();
-        pathologyList.stream().forEach((p) -> {
-            sb.append(p.toString());
-        });
-        FileUtils.writeStringToFile(new File("/home/ju/test.csv"), sb.toString());
+        if (HOSPITAL.length() != 0) {
+            StringBuilder sb = new StringBuilder();
+            pathologyList.stream().forEach((p) -> {
+                sb.append(p.toString());
+            });
+            FileUtils.writeStringToFile(new File("/home/ju/" + HOSPITAL + ".csv"), sb.toString());
+        }
 
+        HashMap<MRStudy, StringBuilder> studyDiagnosisList = new HashMap<>();
+        mrStudyList.keySet().stream().forEach((pid) -> { // each patientID
+            mrStudyList.get(pid).stream().forEach((mrs) -> { // each MRStudy
+                if (!studyDiagnosisList.containsKey(mrs)) {
+                    studyDiagnosisList.put(mrs, new StringBuilder());
+                }
+
+                if (mrs.studyID.equals("1378")) {
+                    DBG.accept("\n");
+                }
+
+                // diagnosis for MRStudy
+                {
+                    boolean hasHER2Fail = false;
+                    boolean hasIDC = false;
+                    boolean hasDCIS = false;
+                    boolean hasILC = false;
+                    boolean hasBenign = false;
+                    boolean noDiagnosis = true;
+                    for (Pathology p : pathologyList) {
+                        if (p.patientID.equals(mrs.patientID) && p.studyID.equals(mrs.studyID) && !p.getDiagnosisSummary().equals("-")) {
+                            noDiagnosis = false;
+
+                            hasHER2Fail = p.isHER2Fail ? p.isHER2Fail : hasHER2Fail;
+                            hasIDC = p.hasIDC ? p.hasIDC : hasIDC;
+                            hasDCIS = p.hasDCIS ? p.hasDCIS : hasDCIS;
+                            hasILC = p.hasILC ? p.hasILC : hasILC;
+                            hasBenign = p.hasBenign ? p.hasBenign : hasBenign;
+                        }
+                    }
+                    StringBuilder sb = studyDiagnosisList.get(mrs);
+                    if (noDiagnosis) {
+                        for (Pathology p : pathologyList) {
+                            if (p.patientID.equals(mrs.patientID) && p.biopsyDate.isAfter(mrs.scanDate) && Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate)) < 30 && !p.getDiagnosisSummary().equals("-")) { //TODO: magic number
+                                hasHER2Fail = p.isHER2Fail ? p.isHER2Fail : hasHER2Fail;
+                                hasIDC = p.hasIDC ? p.hasIDC : hasIDC;
+                                hasDCIS = p.hasDCIS ? p.hasDCIS : hasDCIS;
+                                hasILC = p.hasILC ? p.hasILC : hasILC;
+                                hasBenign = p.hasBenign ? p.hasBenign : hasBenign;
+                            }
+                        }
+                    }
+                    sb.append(hasHER2Fail ? (sb.length() != 0 ? " + " : "") + "HER2" : "");
+                    sb.append(hasIDC ? (sb.length() != 0 ? " + " : "") + "IDC" : "");
+                    sb.append(hasDCIS ? (sb.length() != 0 ? " + " : "") + "DCIS" : "");
+                    sb.append(hasILC ? (sb.length() != 0 ? " + " : "") + "ILC" : "");
+                    sb.append(hasBenign ? (sb.length() != 0 ? " + " : "") + "benign" : "");
+                    sb.insert(0, noDiagnosis && sb.length() != 0 ? "* " : "");
+                    sb.append(sb.length() == 0 ? "-" : "");
+                    mrs.diagnosisSummary = sb.toString();
+                    //DBG.accept(mrs.studyID + "\t" + sb.toString() + "\n");
+                }
+
+                // HER2 for MRStudy
+                {
+                    int her2 = Integer.MIN_VALUE;
+                    LocalDate her2Date = LocalDate.MIN;
+                    boolean noHER2 = true;
+                    for (Pathology p : pathologyList) {
+                        if (p.patientID.equals(mrs.patientID) && p.studyID.equals(mrs.studyID) && p.her2 != Integer.MIN_VALUE) {
+                            noHER2 = false;
+                            //DBG.accept(mrs.studyID + "\t" + p.her2 + "\n");
+                            if (her2 != Integer.MIN_VALUE && her2 != p.her2) {
+
+                                boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                boolean mineIsAfter = her2Date.isAfter(mrs.scanDate);
+                                boolean isSameDate = p.biopsyDate.equals(her2Date);
+                                if (yoursIsAfter && !mineIsAfter) { // prefer biopsy after MRStudy scanDate
+                                    her2 = p.her2;
+                                    her2Date = p.biopsyDate;
+                                } else if (isSameDate) {
+                                    her2 += p.her2;
+                                } else if (Math.abs(DAYS.between(mrs.scanDate, her2Date)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                    her2 = p.her2;
+                                    her2Date = p.biopsyDate;
+                                }
+
+                            } else {
+                                her2 = p.her2;
+                                her2Date = p.biopsyDate;
+                            }
+                        }
+                    }
+                    if (noHER2) {
+                        for (Pathology p : pathologyList) {
+                            if (p.patientID.equals(mrs.patientID) && p.biopsyDate.isAfter(mrs.scanDate) && Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate)) < 30 && p.her2 != Integer.MIN_VALUE) { //TODO: magic number
+                                noHER2 = false;
+                                //DBG.accept(mrs.studyID + "\t" + p.her2 + "\n");
+                                if (her2 != Integer.MIN_VALUE && her2 != p.her2) {
+
+                                    boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                    boolean mineIsAfter = her2Date.isAfter(mrs.scanDate);
+                                    boolean isSameDate = p.biopsyDate.equals(her2Date);
+                                    if (yoursIsAfter && !mineIsAfter) { // find after MRStudy scanDate
+                                        her2 = p.her2;
+                                        her2Date = p.biopsyDate;
+                                    } else if (isSameDate) {
+                                        her2 += p.her2;
+                                    } else if (Math.abs(DAYS.between(mrs.scanDate, her2Date)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                        her2 = p.her2;
+                                        her2Date = p.biopsyDate;
+                                    }
+
+                                } else {
+                                    her2 = p.her2;
+                                    her2Date = p.biopsyDate;
+                                }
+                            }
+                        }
+                    }
+                    mrs.her2 = noHER2 ? Integer.MIN_VALUE : her2;
+                    //DBG.accept(mrs.studyID + "\t" + mrs.her2 + "\n");
+                }
+
+                // Ki-67 for MRStudy
+                {
+                    double ki67 = Double.MIN_VALUE;
+                    LocalDate ki67Date = LocalDate.MIN;
+                    boolean noKi67 = true;
+                    for (Pathology p : pathologyList) {
+                        if (p.patientID.equals(mrs.patientID) && p.studyID.equals(mrs.studyID) && p.ki67 != Double.MIN_VALUE) {
+                            noKi67 = false;
+                            //DBG.accept(mrs.studyID + "\t" + p.ki67 + "\n");
+                            if (ki67 != Double.MIN_VALUE && ki67 != p.ki67) {
+
+                                boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                boolean mineIsAfter = ki67Date.isAfter(mrs.scanDate);
+                                boolean isSameDate = p.biopsyDate.equals(ki67Date);
+                                if (yoursIsAfter && !mineIsAfter) { // prefer biopsy after MRStudy scanDate
+                                    ki67 = p.ki67;
+                                    ki67Date = p.biopsyDate;
+                                } else if (isSameDate) {
+                                    ki67 += p.ki67 * 10000;
+                                } else if (Math.abs(DAYS.between(mrs.scanDate, ki67Date)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                    ki67 = p.ki67;
+                                    ki67Date = p.biopsyDate;
+                                }
+
+                            } else {
+                                ki67 = p.ki67;
+                                ki67Date = p.biopsyDate;
+                            }
+                        }
+                    }
+                    if (noKi67) {
+                        for (Pathology p : pathologyList) {
+                            if (p.patientID.equals(mrs.patientID) && p.biopsyDate.isAfter(mrs.scanDate) && Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate)) < 30 && p.ki67 != Double.MIN_VALUE) { //TODO: magic number
+                                noKi67 = false;
+                                //DBG.accept(mrs.studyID + "\t" + p.ki67 + "\n");
+                                if (ki67 != Integer.MIN_VALUE && ki67 != p.ki67) {
+
+                                    boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                    boolean mineIsAfter = ki67Date.isAfter(mrs.scanDate);
+                                    boolean isSameDate = p.biopsyDate.equals(ki67Date);
+                                    if (yoursIsAfter && !mineIsAfter) { // prefer biopsy after MRStudy scanDate
+                                        ki67 = p.ki67;
+                                        ki67Date = p.biopsyDate;
+                                    } else if (isSameDate) {
+                                        ki67 += p.ki67 * 10000;
+                                    } else if (Math.abs(DAYS.between(mrs.scanDate, ki67Date)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                        ki67 = p.ki67;
+                                        ki67Date = p.biopsyDate;
+                                    }
+
+                                } else {
+                                    ki67 = p.ki67;
+                                    ki67Date = p.biopsyDate;
+                                }
+                            }
+                        }
+                    }
+                    mrs.ki67 = noKi67 ? Double.MIN_VALUE : ki67;
+                    //DBG.accept(mrs.studyID + "\t" + mrs.ki67 + "\n");
+                }
+
+                // er for MRStudy
+                {
+                    int er = Integer.MIN_VALUE;
+                    LocalDate erDate = LocalDate.MIN;
+                    boolean noer = true;
+                    for (Pathology p : pathologyList) {
+                        if (p.patientID.equals(mrs.patientID) && p.studyID.equals(mrs.studyID) && p.er != Integer.MIN_VALUE) {
+                            noer = false;
+                            //DBG.accept(mrs.studyID + "\t" + p.er + "\n");
+                            if (er != Integer.MIN_VALUE && er != p.er) {
+
+                                boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                boolean mineIsAfter = erDate.isAfter(mrs.scanDate);
+                                boolean isSameDate = p.biopsyDate.equals(erDate);
+                                if (yoursIsAfter && !mineIsAfter) { // prefer biopsy after MRStudy scanDate
+                                    er = p.er;
+                                    erDate = p.biopsyDate;
+                                } else if (isSameDate) {
+                                    er += p.er;
+                                } else if (Math.abs(DAYS.between(mrs.scanDate, erDate)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                    er = p.er;
+                                    erDate = p.biopsyDate;
+                                }
+
+                            } else {
+                                er = p.er;
+                                erDate = p.biopsyDate;
+                            }
+                        }
+                    }
+                    if (noer) {
+                        for (Pathology p : pathologyList) {
+                            if (p.patientID.equals(mrs.patientID) && p.biopsyDate.isAfter(mrs.scanDate) && Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate)) < 30 && p.er != Integer.MIN_VALUE) { //TODO: magic number
+                                noer = false;
+                                //DBG.accept(mrs.studyID + "\t" + p.er + "\n");
+                                if (er != Integer.MIN_VALUE && er != p.er) {
+
+                                    boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                    boolean mineIsAfter = erDate.isAfter(mrs.scanDate);
+                                    boolean isSameDate = p.biopsyDate.equals(erDate);
+                                    if (yoursIsAfter && !mineIsAfter) { // find after MRStudy scanDate
+                                        er = p.er;
+                                        erDate = p.biopsyDate;
+                                    } else if (isSameDate) {
+                                        er += p.er;
+                                    } else if (Math.abs(DAYS.between(mrs.scanDate, erDate)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                        er = p.er;
+                                        erDate = p.biopsyDate;
+                                    }
+
+                                } else {
+                                    er = p.er;
+                                    erDate = p.biopsyDate;
+                                }
+                            }
+                        }
+                    }
+                    mrs.er = noer ? Integer.MIN_VALUE : er;
+                    //DBG.accept(mrs.studyID + "\t" + mrs.er + "\n");
+                }
+
+                // pr for MRStudy
+                {
+                    int pr = Integer.MIN_VALUE;
+                    LocalDate prDate = LocalDate.MIN;
+                    boolean nopr = true;
+                    for (Pathology p : pathologyList) {
+                        if (p.patientID.equals(mrs.patientID) && p.studyID.equals(mrs.studyID) && p.pr != Integer.MIN_VALUE) {
+                            nopr = false;
+                            //DBG.accept(mrs.studyID + "\t" + p.pr + "\n");
+                            if (pr != Integer.MIN_VALUE && pr != p.pr) {
+
+                                boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                boolean mineIsAfter = prDate.isAfter(mrs.scanDate);
+                                boolean isSameDate = p.biopsyDate.equals(prDate);
+                                if (yoursIsAfter && !mineIsAfter) { // prefer biopsy after MRStudy scanDate
+                                    pr = p.pr;
+                                    prDate = p.biopsyDate;
+                                } else if (isSameDate) {
+                                    pr += p.pr;
+                                } else if (Math.abs(DAYS.between(mrs.scanDate, prDate)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                    pr = p.pr;
+                                    prDate = p.biopsyDate;
+                                }
+
+                            } else {
+                                pr = p.pr;
+                                prDate = p.biopsyDate;
+                            }
+                        }
+                    }
+                    if (nopr) {
+                        for (Pathology p : pathologyList) {
+                            if (p.patientID.equals(mrs.patientID) && p.biopsyDate.isAfter(mrs.scanDate) && Math.abs(DAYS.between(p.biopsyDate, mrs.scanDate)) < 30 && p.pr != Integer.MIN_VALUE) { //TODO: magic number
+                                nopr = false;
+                                //DBG.accept(mrs.studyID + "\t" + p.pr + "\n");
+                                if (pr != Integer.MIN_VALUE && pr != p.pr) {
+
+                                    boolean yoursIsAfter = p.biopsyDate.isAfter(mrs.scanDate);
+                                    boolean mineIsAfter = prDate.isAfter(mrs.scanDate);
+                                    boolean isSameDate = p.biopsyDate.equals(prDate);
+                                    if (yoursIsAfter && !mineIsAfter) { // find after MRStudy scanDate
+                                        pr = p.pr;
+                                        prDate = p.biopsyDate;
+                                    } else if (isSameDate) {
+                                        pr += p.pr;
+                                    } else if (Math.abs(DAYS.between(mrs.scanDate, prDate)) > Math.abs(DAYS.between(mrs.scanDate, p.biopsyDate))) { // find closest
+                                        pr = p.pr;
+                                        prDate = p.biopsyDate;
+                                    }
+
+                                } else {
+                                    pr = p.pr;
+                                    prDate = p.biopsyDate;
+                                }
+                            }
+                        }
+                    }
+                    mrs.pr = nopr ? Integer.MIN_VALUE : pr;
+                    //DBG.accept(mrs.studyID + "\t" + mrs.pr + "\n");
+                }
+            });
+        });
+        {
+            StringBuilder sb = new StringBuilder();
+            studyDiagnosisList.keySet().stream().forEach((mrs) -> {
+                sb.append(mrs.patientID).append(",");
+                sb.append(mrs.hospital).append(",");
+                sb.append(mrs.studyID).append(",");
+                sb.append(mrs.scanDate).append(",");
+                sb.append(studyDiagnosisList.get(mrs)).append(",");
+                sb.append(mrs.er == Integer.MIN_VALUE ? "-" : mrs.er).append(",");
+                sb.append(mrs.pr == Integer.MIN_VALUE ? "-" : mrs.pr).append(",");
+                sb.append(mrs.her2 == Integer.MIN_VALUE ? "-" : mrs.her2).append(",");
+                sb.append(mrs.ki67 == Double.MIN_VALUE ? "-" : mrs.ki67);
+                sb.append("\n");
+            });
+            FileUtils.writeStringToFile(new File("/home/ju/MR.csv"), sb.toString());
+        }
     }
+
+    static final String SMHT = "SMHT";
+    static final String TMUH = "TMUH";
+    static final String HOSPITAL = "";
 
     static class Pathology {
 
@@ -364,6 +742,8 @@ public class DATA {
         private String patientID;
         private LocalDate biopsyDate;
         private String diagnosis;
+        private boolean isHER2Only;
+        private boolean isHER2Fail;
         private boolean isCoreNeedleBiopsy;
         private boolean hasLeft;
         private boolean hasRight;
@@ -385,21 +765,27 @@ public class DATA {
         private String erText;
         private int pr;
         private String prText;
+        private String studyID = "";
+        private LocalDate scanDate;
 
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append(pathologyID).append(",");
             sb.append(patientID).append(",");
+            sb.append(hasLeft ? hasRight ? "雙" : "左" : hasRight ? "右" : "-").append(",");
             sb.append(biopsyDate).append(",");
             sb.append("\"").append(diagnosis).append("\"").append(",");
+            //sb.append(isHER2Only ? "V" : "-").append(",");
+            //sb.append(isHER2Fail ? "V" : "-").append(",");
             sb.append(isCoreNeedleBiopsy ? "V" : "-").append(",");
-            sb.append(hasLeft ? "V" : "-").append(",");
-            sb.append(hasRight ? "V" : "-").append(",");
-            sb.append(hasIDC ? "V" : "-").append(",");
-            sb.append(hasDCIS ? "V" : "-").append(",");
-            sb.append(hasILC ? "V" : "-").append(",");
-            sb.append(hasBenign ? "V" : "-").append(",");
+            //sb.append(hasLeft ? "V" : "-").append(",");
+            //sb.append(hasRight ? "V" : "-").append(",");
+            //sb.append(hasIDC ? "V" : "-").append(",");
+            //sb.append(hasDCIS ? "V" : "-").append(",");
+            //sb.append(hasILC ? "V" : "-").append(",");
+            //sb.append(hasBenign ? "V" : "-").append(",");
+            sb.append("\"").append(getDiagnosisSummary()).append("\"").append(",");
             sb.append(isBreast ? "V" : "-").append(",");
             sb.append(doctor).append(",");
             sb.append("\"").append(pathology).append("\"").append(",");
@@ -414,8 +800,24 @@ public class DATA {
             sb.append("\"").append(erText).append("\"").append(",");
             sb.append(pr == Integer.MIN_VALUE ? "-" : pr).append(",");
             sb.append("\"").append(prText).append("\"").append(",");
+            sb.append(studyID.equals("") ? "-" : studyID).append(",");
+            sb.append(studyID.equals("") ? "-" : scanDate);
 
             sb.append("\n");
+            return sb.toString();
+        }
+
+        public String getDiagnosisSummary() {
+            StringBuilder sb = new StringBuilder();
+
+            //sb.append(isHER2Only ? (sb.length() != 0 ? " + " : "") + "HER2" : "");
+            sb.append(isHER2Fail ? (sb.length() != 0 ? " + " : "") + "HER2" : "");
+            sb.append(hasIDC ? (sb.length() != 0 ? " + " : "") + "IDC" : "");
+            sb.append(hasDCIS ? (sb.length() != 0 ? " + " : "") + "DCIS" : "");
+            sb.append(hasILC ? (sb.length() != 0 ? " + " : "") + "ILC" : "");
+            sb.append(hasBenign ? (sb.length() != 0 ? " + " : "") + "benign" : "");
+            sb.append(sb.toString().equals("") ? "-" : "");
+
             return sb.toString();
         }
 
@@ -539,16 +941,93 @@ public class DATA {
         String hospital;
         String patientID;
         LocalDate scanDate;
+        String diagnosisSummary;
+        int her2 = Integer.MIN_VALUE;
+        double ki67 = Double.MIN_VALUE;
+        int er = Integer.MIN_VALUE;
+        int pr = Integer.MAX_VALUE;
 
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append(studyID).append(",");
-            sb.append(hospital).append(",");
             sb.append(patientID).append(",");
+            sb.append(hospital).append(",");
+            sb.append(studyID).append(",");
             sb.append(scanDate).append(",");
             sb.append("\n");
             return sb.toString();
+        }
+
+        public static MRStudy getClosestMRStudy(List<MRStudy> list, LocalDate targetDate) {
+//        LocalDate targetDate = LocalDate.of(1900, 05, 05);
+//        LocalDate[] dates = new LocalDate[]{
+//            LocalDate.of(1900, 05, 15),
+//            LocalDate.of(1900, 05, 06),
+//            LocalDate.of(1900, 05, 05),
+//            LocalDate.of(1900, 03, 05),
+//            LocalDate.of(1900, 04, 05),
+//            LocalDate.of(1900, 06, 05),
+//            LocalDate.of(1900, 02, 05),
+//            LocalDate.of(1900, 01, 05),
+//            LocalDate.of(1900, 9, 05)
+//        };
+
+            List<LocalDate> dates = new ArrayList<>();
+            list.stream().forEach((mrs) -> {
+                dates.add(mrs.scanDate);
+            });
+
+            LocalDate closestBeforeAndEqualDate = null;
+            long closestBeforeAndEqualDateBetween = Long.MAX_VALUE;
+            for (LocalDate d : dates) {
+                long monthsBetween = MONTHS.between(targetDate, d);
+                long daysBetween = DAYS.between(targetDate, d);
+
+                if (Math.abs(monthsBetween) > 6 || daysBetween > 0) {
+                    continue;
+                }
+                //DBG.accept("1\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
+
+                if (closestBeforeAndEqualDateBetween == Long.MAX_VALUE) {
+                    closestBeforeAndEqualDate = d;
+                    closestBeforeAndEqualDateBetween = daysBetween;
+                } else if (Math.abs(closestBeforeAndEqualDateBetween) > Math.abs(daysBetween)) {
+                    closestBeforeAndEqualDate = d;
+                    closestBeforeAndEqualDateBetween = daysBetween;
+                }
+            }
+            //DBG.accept(closestBeforeAndEqualDate + "\t" + closestBeforeAndEqualDateBetween + "\n");
+            LocalDate closestAfterDate = null;
+            long closestAfterDateBetween = Long.MAX_VALUE;
+            for (LocalDate d : dates) {
+                long monthsBetween = MONTHS.between(targetDate, d);
+                long daysBetween = DAYS.between(targetDate, d);
+
+                if (Math.abs(monthsBetween) > 3 || daysBetween <= 0) {
+                    continue;
+                }
+                //DBG.accept("2\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
+
+                if (closestAfterDateBetween == Long.MAX_VALUE) {
+                    closestAfterDate = d;
+                    closestAfterDateBetween = daysBetween;
+                } else if (Math.abs(closestAfterDateBetween) > Math.abs(daysBetween)) {
+                    closestAfterDate = d;
+                    closestAfterDateBetween = daysBetween;
+                }
+            }
+            //DBG.accept(closestAfterDate + "\t" + closestAfterDateBetween + "\n");
+
+            LocalDate finalDate = (closestBeforeAndEqualDate != null) ? (Math.abs(closestBeforeAndEqualDateBetween) < Math.abs(closestAfterDateBetween) ? closestBeforeAndEqualDate : Math.abs(closestBeforeAndEqualDateBetween) <= 30 ? closestBeforeAndEqualDate : closestAfterDate) : closestAfterDate;
+            //DBG.accept(finalDate + "\n");
+
+            for (MRStudy mrs : list) {
+                if (mrs.scanDate.equals(finalDate)) {
+                    return mrs;
+                }
+            }
+
+            return null;
         }
     }
 
