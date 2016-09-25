@@ -48,7 +48,7 @@ public class DATA {
     public static void main(String args[]) throws UnsupportedEncodingException, IOException, IllegalArgumentException, IllegalAccessException {
 
         Map<String, List<DATA.MRStudy>> mrStudyList = new HashMap<>();
-        try (BufferedReader in = new BufferedReader(new FileReader("/home/ju/pList.txt"))) {
+        try (BufferedReader in = new BufferedReader(new FileReader(DATA_ROOT + "pList.txt"))) {
             while (true) {
                 String line = in.readLine();
                 if (line == null) {
@@ -72,7 +72,7 @@ public class DATA {
         }
 
         List<DATA.Pathology> pathologyList = new ArrayList<>();
-        try (BufferedReader in = new BufferedReader(new FileReader("/home/ju/" + HOSPITAL + (HOSPITAL.length() == 0 ? "" : "_") + "DATA"))) {
+        try (BufferedReader in = new BufferedReader(new FileReader(DATA_ROOT + HOSPITAL + (HOSPITAL.length() == 0 ? "" : "_") + "DATA"))) {
             while (true) {
                 String line = in.readLine();
                 if (line == null) {
@@ -91,7 +91,7 @@ public class DATA {
                 // to struct report: pathology
                 // ***********************************************************//
                 boolean isDiagnosisStart = false;
-                boolean isPathologyReportStart = false;
+                boolean isPathologyStart = false;
                 boolean isImmunohistochemicalStart = false;
                 boolean hasHER2inThisPatholgy = false;
                 boolean isERStart = false;
@@ -142,11 +142,11 @@ public class DATA {
 
                     if (s.contains("組織報告")) {
                         isDiagnosisStart = false;
-                        isPathologyReportStart = true;
+                        isPathologyStart = true;
                     }
 
                     if (s.contains("主治醫師")) {
-                        isPathologyReportStart = false;
+                        isPathologyStart = false;
 
                         tokens = s.split("：");
                         doctor = (tokens.length == 2) ? tokens[1] : "UNKNOWN";
@@ -274,7 +274,7 @@ public class DATA {
                         pathologyList.add(p);
                     }
 
-                    if (StringUtils.contains(s, IMMUNO_KEYWORD) && isPathologyReportStart) {
+                    if (StringUtils.contains(s, IMMUNO_KEYWORD) && isPathologyStart) {
                         isImmunohistochemicalStart = true;
                         immunoSearchWindowSizeinLine = IMMUNO_SEARCH_WINDOW_SIZE;
                     }
@@ -288,12 +288,12 @@ public class DATA {
                             isImmunohistochemicalStart = false;
                         }
 
-                        if (!isPathologyReportStart) {
+                        if (!isPathologyStart) {
                             isImmunohistochemicalStart = false;
                         }
                     }
 
-                    assert (!(isImmunohistochemicalStart && !isPathologyReportStart));
+                    assert (!(isImmunohistochemicalStart && !isPathologyStart));
 
                     if (isImmunohistochemicalStart) {
                         // Ki-67
@@ -395,7 +395,7 @@ public class DATA {
                         diagnosis += (s.trim().length() != 0) ? (s + "\n") : "";
                     }
 
-                    if (isPathologyReportStart) {
+                    if (isPathologyStart) {
                         pathology += (s.trim().length() != 0) ? (s + "\n") : "";
                     }
 
@@ -413,7 +413,7 @@ public class DATA {
             pathologyList.stream().forEach((p) -> {
                 sb.append(p.toString());
             });
-            FileUtils.writeStringToFile(new File("/home/ju/" + HOSPITAL + ".csv"), sb.toString());
+            FileUtils.writeStringToFile(new File(DATA_ROOT + HOSPITAL + ".csv"), sb.toString());
         }
 
         HashMap<MRStudy, StringBuilder> studyDiagnosisList = new HashMap<>();
@@ -728,13 +728,14 @@ public class DATA {
                 sb.append(mrs.ki67 == Double.MIN_VALUE ? "-" : mrs.ki67);
                 sb.append("\n");
             });
-            FileUtils.writeStringToFile(new File("/home/ju/MR.csv"), sb.toString());
+            FileUtils.writeStringToFile(new File(DATA_ROOT + "MR.csv"), sb.toString());
         }
     }
 
     static final String SMHT = "SMHT";
     static final String TMUH = "TMUH";
     static final String HOSPITAL = "";
+    static final String DATA_ROOT = "D:\\Dropbox\\";
 
     static class Pathology {
 
@@ -959,66 +960,55 @@ public class DATA {
         }
 
         public static MRStudy getClosestMRStudy(List<MRStudy> list, LocalDate targetDate) {
-//        LocalDate targetDate = LocalDate.of(1900, 05, 05);
-//        LocalDate[] dates = new LocalDate[]{
-//            LocalDate.of(1900, 05, 15),
-//            LocalDate.of(1900, 05, 06),
-//            LocalDate.of(1900, 05, 05),
-//            LocalDate.of(1900, 03, 05),
-//            LocalDate.of(1900, 04, 05),
-//            LocalDate.of(1900, 06, 05),
-//            LocalDate.of(1900, 02, 05),
-//            LocalDate.of(1900, 01, 05),
-//            LocalDate.of(1900, 9, 05)
-//        };
 
             List<LocalDate> dates = new ArrayList<>();
             list.stream().forEach((mrs) -> {
                 dates.add(mrs.scanDate);
             });
 
-            LocalDate closestBeforeAndEqualDate = null;
+            LocalDate before = null;
             long closestBeforeAndEqualDateBetween = Long.MAX_VALUE;
             for (LocalDate d : dates) {
                 long monthsBetween = MONTHS.between(targetDate, d);
                 long daysBetween = DAYS.between(targetDate, d);
-
                 if (Math.abs(monthsBetween) > 6 || daysBetween > 0) {
                     continue;
                 }
-                //DBG.accept("1\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
-
+                //DBG.accept("before\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
                 if (closestBeforeAndEqualDateBetween == Long.MAX_VALUE) {
-                    closestBeforeAndEqualDate = d;
+                    before = d;
                     closestBeforeAndEqualDateBetween = daysBetween;
                 } else if (Math.abs(closestBeforeAndEqualDateBetween) > Math.abs(daysBetween)) {
-                    closestBeforeAndEqualDate = d;
+                    before = d;
                     closestBeforeAndEqualDateBetween = daysBetween;
                 }
             }
-            //DBG.accept(closestBeforeAndEqualDate + "\t" + closestBeforeAndEqualDateBetween + "\n");
-            LocalDate closestAfterDate = null;
+            //DBG.accept(before + "\t" + closestBeforeAndEqualDateBetween + "\n");
+
+            LocalDate after = null;
             long closestAfterDateBetween = Long.MAX_VALUE;
             for (LocalDate d : dates) {
                 long monthsBetween = MONTHS.between(targetDate, d);
                 long daysBetween = DAYS.between(targetDate, d);
-
                 if (Math.abs(monthsBetween) > 3 || daysBetween <= 0) {
                     continue;
                 }
-                //DBG.accept("2\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
-
+                //DBG.accept("after\t" + d + "\t" + monthsBetween + "\t" + daysBetween + "\n");
                 if (closestAfterDateBetween == Long.MAX_VALUE) {
-                    closestAfterDate = d;
+                    after = d;
                     closestAfterDateBetween = daysBetween;
                 } else if (Math.abs(closestAfterDateBetween) > Math.abs(daysBetween)) {
-                    closestAfterDate = d;
+                    after = d;
                     closestAfterDateBetween = daysBetween;
                 }
             }
-            //DBG.accept(closestAfterDate + "\t" + closestAfterDateBetween + "\n");
+            //DBG.accept(after + "\t" + closestAfterDateBetween + "\n");
 
-            LocalDate finalDate = (closestBeforeAndEqualDate != null) ? (Math.abs(closestBeforeAndEqualDateBetween) < Math.abs(closestAfterDateBetween) ? closestBeforeAndEqualDate : Math.abs(closestBeforeAndEqualDateBetween) <= 30 ? closestBeforeAndEqualDate : closestAfterDate) : closestAfterDate;
+            LocalDate finalDate = (before != null)
+                    ? Math.abs(closestBeforeAndEqualDateBetween) < Math.abs(closestAfterDateBetween)
+                            ? before
+                            : Math.abs(closestBeforeAndEqualDateBetween) <= 30 ? before : after
+                    : after;
             //DBG.accept(finalDate + "\n");
 
             for (MRStudy mrs : list) {
