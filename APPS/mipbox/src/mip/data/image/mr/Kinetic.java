@@ -110,7 +110,7 @@ public class Kinetic {
                 super.mouseWheelMoved(e);
             }
         });
-        imp.setPosition(mrStudy.mrs2.getSize() / 2);
+        imp.setPosition(mrStudy.T0.getSize() / 2);
     }
 
     public void render() {
@@ -166,13 +166,13 @@ public class Kinetic {
     private void doColorMapping() {
         Timer t = new Timer();
 
-        MR fms = mrStudy.mrs2.getImageArrayXY()[mrStudy.mrs2.getSize() / 2]; // first middle slice
+        MR fms = mrStudy.T0.getImageArrayXY()[mrStudy.T0.getSize() / 2]; // first middle slice
         ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(fms));
         NOISE_FLOOR = (int) Math.ceil(is.stdDev * 2.0);
         Glandular_Noise_Ratio = (NOISE_FLOOR > 1000) ? 1.47 : 1.33; // TODO magic number
         Glandular = Glandular_Noise_Ratio * NOISE_FLOOR;
 
-        ColorProcessor[] cps = new ColorProcessor[mrStudy.mrs2.getSize()];
+        ColorProcessor[] cps = new ColorProcessor[mrStudy.T0.getSize()];
 
         if (hasROI()) {
             result.append("Slice\tRed\tPink\tYellow\tGreen\tBlue\tRoiA\tRoiM\n");
@@ -180,7 +180,7 @@ public class Kinetic {
         }
 
         for (int i = 0; i < cps.length; i++) {
-            MR t1 = mrStudy.mrs3.getImageArrayXY()[i];
+            MR t1 = mrStudy.T1.getImageArrayXY()[i];
             final int width = t1.getWidth();
             final int height = t1.getHeight();
             ColorProcessor cp = new ColorProcessor(width, height);
@@ -286,7 +286,7 @@ public class Kinetic {
             }
         } // each slice
 
-        ImageStack ims = new ImageStack(mrStudy.mrs3.getImageArrayXY()[0].getWidth(), mrStudy.mrs3.getImageArrayXY()[0].getHeight());
+        ImageStack ims = new ImageStack(mrStudy.T1.getImageArrayXY()[0].getWidth(), mrStudy.T1.getImageArrayXY()[0].getHeight());
         for (ColorProcessor cp : cps) {
             ims.addSlice(cp);
         }

@@ -72,11 +72,11 @@ public class BMRStudyTest {
     @Test
     public void testAllSereis() throws IOException {
         MRSeriesTest mrsTest = new MRSeriesTest();
-        mrsTest.instance = instance.mrs2;
+        mrsTest.instance = instance.T0;
         mrsTest.testGetImageArrayXY();
-        mrsTest.instance = instance.mrs3;
+        mrsTest.instance = instance.T1;
         mrsTest.testGetImageArrayXY();
-        mrsTest.instance = instance.mrs4;
+        mrsTest.instance = instance.T2;
         mrsTest.testGetImageArrayXY();
     }
 

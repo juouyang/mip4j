@@ -13,16 +13,16 @@ public class BMRStudy {
     private final String patientID;
     private final String studyID;
 
-    MRSeries mrs2;
-    MRSeries mrs3;
-    MRSeries mrs4;
+    MRSeries T0;
+    MRSeries T1;
+    MRSeries T2;
 
     public BMRStudy(Path studyRoot) {
         Timer t = new Timer();
         this.studyRoot = studyRoot.toString();
         read_dicom_files(studyRoot);
-        patientID = mrs2.getImageArrayXY()[0].getPatientID();
-        studyID = mrs2.getImageArrayXY()[0].getStudyID();
+        patientID = T0.getImageArrayXY()[0].getPatientID();
+        studyID = T0.getImageArrayXY()[0].getStudyID();
         t.printElapsedTime("BMRStudy");
     }
 
@@ -45,14 +45,18 @@ public class BMRStudy {
     public short getPixel(int x, int y, int z, int t) {
         switch (t) {
             case 0:
-                return mrs2.getPixel(x, y, z);
+                return T0.getPixel(x, y, z);
             case 1:
-                return mrs3.getPixel(x, y, z);
+                return T1.getPixel(x, y, z);
             case 2:
-                return mrs4.getPixel(x, y, z);
+                return T2.getPixel(x, y, z);
             default:
                 throw new IllegalArgumentException();
         }
+    }
+
+    public String getStudyRoot() {
+        return studyRoot;
     }
     //</editor-fold>
 
@@ -100,9 +104,9 @@ public class BMRStudy {
         }
 
         try {
-            mrs2 = new MRSeries(t0);
-            mrs3 = new MRSeries(t1);
-            mrs4 = new MRSeries(t2);
+            T0 = new MRSeries(t0);
+            T1 = new MRSeries(t1);
+            T2 = new MRSeries(t2);
         } catch (InterruptedException ignore) {
         }
     }
