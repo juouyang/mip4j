@@ -61,7 +61,7 @@ public class ROIUtils {
         return rois;
     }
 
-    public static ArrayList<Roi> filterROI(List<Roi> rois, int z_position) {
+    public static ArrayList<Roi> filterROIbySlice(List<Roi> rois, int z_position) {
         ArrayList<Roi> ret = new ArrayList<>();
         if (rois != null) {
             for (Roi r : rois) {
