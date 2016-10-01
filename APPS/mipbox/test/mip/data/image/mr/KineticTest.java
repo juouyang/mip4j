@@ -6,6 +6,7 @@
 package mip.data.image.mr;
 
 import java.io.File;
+import mip.data.image.mr.Kinetic.KineticType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,28 +61,10 @@ public class KineticTest {
     }
 
     /**
-     * Test of getColorMapping method, of class ColorMapping.
-     */
-    @Test
-    public void testGetColorMapping() {
-        int x = 0;
-        int y = 0;
-        int z = 0;
-        int expResult = 6;
-        int result = instance.getKinetic(x, y, z);
-        assertEquals(expResult, result);
-    }
-
-    /**
      * Test of getKinetic method, of class Kinetic.
      */
     @Test
     public void testGetKinetic() {
-        int x = 0;
-        int y = 0;
-        int z = 0;
-        int expResult = 6;
-        int result = instance.getKinetic(x, y, z);
-        assertEquals(expResult, result);
+        assertEquals(KineticType.UNMAPPED, instance.getKinetic(0, 0, 0));
     }
 }
