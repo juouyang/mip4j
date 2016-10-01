@@ -69,11 +69,12 @@ public class BMRStudy {
         }
 
         ArrayList<Path> t0 = new ArrayList<>();
-        ArrayList<Path> t1 = new ArrayList<>();
-        ArrayList<Path> t2 = new ArrayList<>();
+        ArrayList<Path> t1;
+        ArrayList<Path> t2;
         ArrayList<Path> s3 = new ArrayList<>();
         ArrayList<Path> s4 = new ArrayList<>();
         ArrayList<Path> s5 = new ArrayList<>();
+        ArrayList<Path> s6 = new ArrayList<>();
 
         for (Path fn : IOUtils.listFiles(studyRoot.toString())) {
             if (fn.getParent().endsWith("2")) {
@@ -88,19 +89,26 @@ public class BMRStudy {
             if (fn.getParent().endsWith("5")) {
                 s5.add(fn);
             }
+            if (fn.getParent().endsWith("6")) {
+                s6.add(fn);
+            }
         }
 
         if (s3.size() == t0.size() && s4.size() == t0.size()) {
-            t1.addAll(s3);
-            t2.addAll(s4);
+            t1 = s3;
+            t2 = s4;
         } else if (s3.size() == t0.size() && s5.size() == t0.size()) {
-            t1.addAll(s3);
-            t2.addAll(s5);
+            t1 = s3;
+            t2 = s5;
         } else if (s4.size() == t0.size() && s5.size() == t0.size()) {
-            t1.addAll(s4);
-            t2.addAll(s5);
+            t1 = s4;
+            t2 = s5;
+        } else if (s3.size() == s4.size() && s4.size() == s5.size() && s3.size() != t0.size()) {
+            t0 = s4;
+            t1 = s5;
+            t2 = s6;
         } else {
-            throw new IllegalArgumentException("Unmatched frame-count of series");
+            throw new IllegalArgumentException("Unmatched frame-count of series " + studyRoot);
         }
 
         try {
