@@ -17,7 +17,7 @@ public class DebugUtils {
     private static final boolean IS_DEBUG = true;
     public static final Consumer<String> DBG = DebugUtils::debug;
 
-    public static void debug(String s) {
+    private static void debug(String s) {
         if (IS_DEBUG == true) {
             System.out.print(s);
 

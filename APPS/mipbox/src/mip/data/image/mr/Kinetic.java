@@ -20,14 +20,16 @@ import java.io.File;
 import java.io.IOException;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.List;
+import mip.data.Point3d;
+import mip.data.image.BitVolume;
+import static mip.util.DebugUtils.DBG;
+import static mip.util.DebugUtils.pause;
 
 import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.util.ROIUtils;
 import mip.util.Timer;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Range;
 
 public class Kinetic {
@@ -35,97 +37,162 @@ public class Kinetic {
     private static final double AURORA_STRONG_ENHANCE = 0.32;
     private static final double AURORA_DELAYED_WASHOUT = -0.05;
     private static final double AURORA_DELAYED_PERSIST = 0.05;
-    private static final double STRONG_ENHANCE = AURORA_STRONG_ENHANCE;
     private static final DecimalFormat DF = new DecimalFormat("0.0000;-0.0000");
 
-    private final double DELAYED_WASHOUT;
-    private final double DELAYED_PERSIST;
+    private final double STRONG_ENHANCE = AURORA_STRONG_ENHANCE;
     private final double GLANDULAR;
     private final Range<Double> PLATEAU_RANGE;
     private final boolean NO_BACKGROUND;
 
-    private final BMRStudy mrStudy;
-    private final List<Roi> rois;
-    private final String roiFile;
-    private final double resolution;
+    public final BMRStudy mrStudy;
 
-    public ImagePlus imp;
-    public double summaryWashout = 0;
-    public double summaryPlateau = 0;
-    public double summaryPersistent = 0;
-    public double summaryStrongEnhanced = 0;
-    public double summaryROI = 0;
-    public StringBuffer detail = new StringBuffer();
-    public StringBuffer summary = new StringBuffer();
+    private final StringBuilder summary = new StringBuilder();
+    private String roiFilePath;
+    private BitVolume selectedVOI;
+    private boolean onlyVOI;
+    private ImagePlus imp;
+    private double summaryWashout = 0;
+    private double summaryPlateau = 0;
+    private double summaryPersistent = 0;
+    private double summaryStrongEnhanced = 0;
+    private double summaryROI = 0;
 
     public Kinetic(BMRStudy mrs) {
-        this(mrs, null, AURORA_DELAYED_WASHOUT, AURORA_DELAYED_PERSIST, true);
+        this(mrs, null, AURORA_DELAYED_WASHOUT, AURORA_DELAYED_PERSIST, false, false, false);
     }
 
-    public Kinetic(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPersist, boolean noBackground) {
+    public Kinetic(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPersist, boolean noBackground, boolean doColorMapping, boolean doOnlyVOI) {
         mrStudy = mrs;
-        rois = IOUtils.fileExisted(roiFile) ? ROIUtils.uncompressROI(roiFile) : new ArrayList<>();
-        resolution = mrs.T0.getPixelSpacingX() * mrs.T0.getPixelSpacingY() * mrs.T0.getSliceThickness();
-        this.roiFile = roiFile;
+        selectedVOI = initVOI(roiFile);
         NO_BACKGROUND = noBackground;
-        DELAYED_WASHOUT = delayedWashout;
-        DELAYED_PERSIST = delayedPersist;
-        PLATEAU_RANGE = Range.between(DELAYED_WASHOUT, DELAYED_PERSIST);
-        GLANDULAR = getGlandular();
-        doColorMapping();
-    }
-
-    public void save() throws IOException {
-        FileSaver fs = new FileSaver(imp);
-        fs.saveAsTiffStack(mrStudy.studyRoot + "/cm.tif");
-        FileUtils.writeStringToFile(new File(mrStudy.studyRoot + "/summary.txt"), summary.toString());
+        PLATEAU_RANGE = Range.between(delayedWashout, delayedPersist);
+        GLANDULAR = initGlandular();
+        imp = (doColorMapping) ? colorMapping(doOnlyVOI) : null;
+        onlyVOI = doOnlyVOI;
     }
 
     public static void main(String[] args) throws IOException {
         File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
         final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
         k.show();
-        System.out.println(k.summary.toString());
+        Point3d seed = new Point3d(376, 267, 71);
+        BitVolume selected = BitVolume.regionGrowingByKinetic(k, seed);
+        List<Roi> rois = selected.getROIs();
+        final String roiFile = "/tmp/foo.zip";
+        ROIUtils.saveROIs(rois, roiFile);
+        k.setVOI(roiFile);
+        DBG.accept(k + "\n");
+        k.show();
+        k.render();
+    }
+
+    public void save() throws IOException {
+        FileSaver fs = new FileSaver(getImagePlue());
+        fs.saveAsTiffStack(mrStudy.studyRoot + "/cm.tif");
     }
 
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    private BitVolume initVOI(String roiFile) {
+        roiFilePath = (IOUtils.fileExisted(roiFile)) ? roiFile : null;
+        if (roiFilePath == null) {
+            return null;
+        }
+
+        int w = getWidth();
+        int h = getHeight();
+        int l = getSize();
+        BitVolume bv = new BitVolume(w, h, l);
+        List<Roi> rois = ROIUtils.openROIs(roiFilePath);
+        rois.stream().forEach((roi) -> {
+            int z = roi.getPosition() - 1;
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    if (roi.contains(x, y)) {
+                        bv.setPixel(x, y, z, true);
+                    }
+                }
+            }
+        });
+
+        return bv;
+    }
+
+    private double initGlandular() {
+        MR firstMiddleSlice = mrStudy.T0.getImageArrayXY()[mrStudy.T0.getSize() / 2];
+        ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(firstMiddleSlice));
+        // TODO magic number
+        int noiseFloor = (int) Math.ceil(is.stdDev * 2.0);
+        double glandularNoiseRatio = (noiseFloor > 1000) ? 1.47 : 1.33;
+        return glandularNoiseRatio * noiseFloor;
+    }
+
+    public void setVOI(String roiFile) {
+        selectedVOI = initVOI(roiFile);
+        imp = colorMapping(true);
+    }
+
+    public boolean isStrongEnhanced(int x, int y, int z) {
+        int initial = mrStudy.getPixel(x, y, z, 0);
+        double R1 = initialPhase(initial, mrStudy.getPixel(x, y, z, 1));
+        return initial >= GLANDULAR && R1 > STRONG_ENHANCE;
+    }
+
+    public int getWidth() {
+        return mrStudy.T0.getWidth();
+    }
+
+    public int getHeight() {
+        return mrStudy.T0.getHeight();
+    }
+
+    public int getSize() {
+        return mrStudy.T0.getSize();
+    }
+
+    @Override
+    public String toString() {
+        getImagePlue();
+        return summary.toString();
+    }
+
     public void show() {
         ImageJ ij = new ImageJ();
         ij.exitWhenQuitting(true);
 
-        if (roiFile != null) {
-            new Opener().openZip(roiFile);
+        if (roiFilePath != null) {
+            new Opener().openZip(roiFilePath);
         }
-        imp.show();
-        imp.getCanvas().addMouseMotionListener(new MouseAdapter() {
+        final ImagePlus i = getImagePlue().duplicate();
+        i.show();
+        i.getCanvas().addMouseMotionListener(new MouseAdapter() {
 
             @Override
             public void mouseMoved(MouseEvent e) {
 
-                final int Z = imp.getCurrentSlice() - 1;
-                final int X = imp.getCanvas().getCursorLoc().x;
-                final int Y = imp.getCanvas().getCursorLoc().y;
+                final int Z = i.getCurrentSlice() - 1;
+                final int X = i.getCanvas().getCursorLoc().x;
+                final int Y = i.getCanvas().getCursorLoc().y;
 
-                imp.setTitle(getColorMappingInfo(X, Y, Z));
+                i.setTitle(getColorMappingInfo(X, Y, Z));
                 super.mouseMoved(e);
             }
 
         });
-        imp.getCanvas().addMouseWheelListener(new MouseAdapter() {
+        i.getCanvas().addMouseWheelListener(new MouseAdapter() {
 
             @Override
             public void mouseWheelMoved(MouseWheelEvent e) {
-                int Z = imp.getCurrentSlice() + ((e.getWheelRotation() > 0) ? 1 : -1);
-                Z = Z > imp.getNSlices() ? imp.getNSlices() : Z < 1 ? 1 : Z;
-                final int X = imp.getCanvas().getCursorLoc().x;
-                final int Y = imp.getCanvas().getCursorLoc().y;
+                int Z = i.getCurrentSlice() + ((e.getWheelRotation() > 0) ? 1 : -1);
+                Z = Z > i.getNSlices() ? i.getNSlices() : Z < 1 ? 1 : Z;
+                final int X = i.getCanvas().getCursorLoc().x;
+                final int Y = i.getCanvas().getCursorLoc().y;
 
-                imp.setTitle(getColorMappingInfo(X, Y, Z - 1));
-                imp.setPosition(Z);
+                i.setTitle(getColorMappingInfo(X, Y, Z - 1));
+                i.setPosition(Z);
                 super.mouseWheelMoved(e);
             }
         });
-        imp.setPosition(mrStudy.T0.getSize() / 2);
+        i.setPosition(mrStudy.T0.getSize() / 2);
     }
 
     public void render() {
@@ -138,7 +205,7 @@ public class Kinetic {
     }
 
     private boolean hasROI() {
-        return !rois.isEmpty();
+        return roiFilePath != null;
     }
 
     public KineticType getKinetic(int x, int y, int z) {
@@ -157,22 +224,37 @@ public class Kinetic {
     private String getMappingDesc(int initial, int peak, int delay) {
         return mapping(initial, peak, delay).toString();
     }
+
+    private ImagePlus getImagePlue() {
+        if (imp == null) {
+            imp = colorMapping(onlyVOI);
+        }
+        return imp;
+    }
     //</editor-fold>
 
-    private void doColorMapping() {
+    private ImagePlus colorMapping(boolean onlyROI) {
+        imp = null;
+        summaryWashout = 0;
+        summaryPlateau = 0;
+        summaryPersistent = 0;
+        summaryStrongEnhanced = 0;
+        summaryROI = 0;
+        summary.setLength(0);
+
+        assert (imp == null && summary.length() == 0 && (summaryWashout + summaryPlateau + summaryPersistent + summaryStrongEnhanced + summaryROI == 0));
+
         Timer t = new Timer();
 
         ColorProcessor[] cps = new ColorProcessor[mrStudy.T0.getSize()];
         {
-            detail.append("Slice, Washout, Plateau, Persist, RoiA, RoiM\n");
-
             for (int i = 0; i < cps.length; i++) {
                 MR t1 = mrStudy.T1.getImageArrayXY()[i];
                 final int width = t1.getWidth();
                 final int height = t1.getHeight();
                 ByteProcessor bp = NO_BACKGROUND ? null : ImageJUtils.getByteProcessorFromShortImage(t1, t1.getWindowCenter(), t1.getWindowWidth());
-                final int z = i + 1;
-                List<Roi> roi = ROIUtils.filterROIbySlice(rois, z);
+
+                assert (bp != null || NO_BACKGROUND);
 
                 ColorProcessor cp = new ColorProcessor(width, height);
                 double enhancedVolume = 0;
@@ -188,52 +270,51 @@ public class Kinetic {
                         int delay = mrStudy.getPixel(x, y, i, 2);
 
                         boolean pixelInROI = false;
-                        if ((hasROI() && ROIUtils.withinROI(roi, x, y)) || !hasROI()) {
+                        if ((hasROI() && selectedVOI.getPixel(x, y, i)) || !hasROI()) {
                             roiVolume++;
                             pixelInROI = true;
                         }
 
-                        final KineticType kt = mapping(initial, peak, delay);
-                        final int v = (!NO_BACKGROUND && bp != null) ? bp.getPixel(x, y) / 3 : 0;
-                        final Color c = (kt == KineticType.UNMAPPED || kt == KineticType.GLAND)
-                                ? (NO_BACKGROUND || bp == null) ? Color.BLACK : new Color(v, v, v)
-                                : kt.color;
-                        cp.putPixel(x, y, new int[]{c.getRed(), c.getGreen(), c.getBlue()});
-
-                        if (!pixelInROI) {
+                        if (onlyROI && !pixelInROI) {
                             continue;
                         }
 
-                        switch (kt) {
-                            case WASHOUT:
-                                washoutVolume++;
-                                enhancedVolume++;
-                                break;
-                            case PLATEAU:
-                                plateauVolume++;
-                                enhancedVolume++;
-                                break;
-                            case PERSIST:
-                                persistVolume++;
-                                enhancedVolume++;
-                                break;
-                            default:
+                        final KineticType kt = mapping(initial, peak, delay);
+
+                        Color c;
+                        {
+                            if (kt == KineticType.UNMAPPED || kt == KineticType.GLAND) {
+                                if (NO_BACKGROUND) {
+                                    continue;
+                                }
+                                assert (bp != null);
+                                final int v = bp.getPixel(x, y) / 3;
+                                c = new Color(v, v, v);
+                            } else {
+                                c = kt.color;
+                            }
+                        }
+                        cp.putPixel(x, y, new int[]{c.getRed(), c.getGreen(), c.getBlue()});
+                        if (pixelInROI) {
+                            switch (kt) {
+                                case WASHOUT:
+                                    washoutVolume++;
+                                    enhancedVolume++;
+                                    break;
+                                case PLATEAU:
+                                    plateauVolume++;
+                                    enhancedVolume++;
+                                    break;
+                                case PERSIST:
+                                    persistVolume++;
+                                    enhancedVolume++;
+                                    break;
+                                default:
+                            }
                         }
                     }
                 }// each pixel
                 cps[i] = cp;
-
-                washoutVolume *= resolution;
-                plateauVolume *= resolution;
-                persistVolume *= resolution;
-                enhancedVolume *= resolution;
-                roiVolume *= resolution;
-                detail.append(z).append(", ");
-                detail.append((int) washoutVolume).append(", ");
-                detail.append((int) plateauVolume).append(", ");
-                detail.append((int) persistVolume).append(", ");
-                detail.append((int) enhancedVolume).append(", ");
-                detail.append((int) roiVolume).append("\n");
 
                 summaryWashout += washoutVolume;
                 summaryPlateau += plateauVolume;
@@ -246,8 +327,9 @@ public class Kinetic {
         for (ColorProcessor cp : cps) {
             ims.addSlice(cp);
         }
-        imp = new ImagePlus("", ims);
+        ImagePlus ret = new ImagePlus("", ims);
 
+        //double resolution = mrStudy.T0.pixelSpacingX * mrStudy.T0.pixelSpacingY * mrStudy.T0.sliceThickness;
         summary.append("\tWashout\tPlateau\tPersist\tEnhance\tROI\n");
         summary.append("------------------------------------------------\n");
         summary.append("Total\t");
@@ -269,7 +351,9 @@ public class Kinetic {
         summary.append(DF.format(summaryStrongEnhanced / summaryROI)).append("\t");
         summary.append(DF.format(summaryROI / summaryROI)).append("\n");
 
-        t.printElapsedTime("ColorMapping");
+        t.printElapsedTime("colorMapping");
+
+        return ret;
     }
 
     private static double initialPhase(int initial, int peak) {
@@ -288,9 +372,9 @@ public class Kinetic {
 
         if (initial >= GLANDULAR) {
             if (R1 < -0.4) {
-                ret = PLATEAU_RANGE.contains(R2) ? KineticType.FLUID : ret;
+                //ret = PLATEAU_RANGE.contains(R2) ? KineticType.FLUID : ret;
             } else if (R1 < -0.2) {
-                ret = PLATEAU_RANGE.contains(R2) ? KineticType.EDEMA : ret;
+                //ret = PLATEAU_RANGE.contains(R2) ? KineticType.EDEMA : ret;
             } else if (R1 > STRONG_ENHANCE) {
                 ret = PLATEAU_RANGE.contains(R2) ? KineticType.PLATEAU : ret;
                 ret = R2 < PLATEAU_RANGE.getMinimum() ? KineticType.WASHOUT : ret;
@@ -303,20 +387,11 @@ public class Kinetic {
         return ret;
     }
 
-    private double getGlandular() {
-        MR firstMiddleSlice = mrStudy.T0.getImageArrayXY()[mrStudy.T0.getSize() / 2];
-        ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(firstMiddleSlice));
-        // TODO magic number
-        int noiseFloor = (int) Math.ceil(is.stdDev * 2.0);
-        double glandularNoiseRatio = (noiseFloor > 1000) ? 1.47 : 1.33;
-        return glandularNoiseRatio * noiseFloor;
-    }
-
     public enum KineticType {
 
         GLAND("Glandular", new Color(12, 12, 12)), WASHOUT("Washout", Color.RED), PLATEAU("Plateau", Color.MAGENTA), PERSIST("Persistent", Color.YELLOW), EDEMA("Edema", Color.GREEN), FLUID("Fluid", Color.BLUE), UNMAPPED("Unmapped", null);
         private final String description;
-        private final Color color;
+        final Color color;
 
         private KineticType(String s, Color c) {
             description = s;
