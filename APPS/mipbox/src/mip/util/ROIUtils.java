@@ -3,6 +3,7 @@ package mip.util;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
 import ij.io.RoiDecoder;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Polygon;
 import java.awt.geom.GeneralPath;
@@ -20,7 +21,17 @@ public class ROIUtils {
     private ROIUtils() { // singleton
     }
 
-    public static List<Roi> uncompressROI(String zipFile) {
+    private static final RoiManager RM = new RoiManager(true);
+
+    public static void saveROIs(List<Roi> rois, String zipFile) {
+
+        rois.stream().forEach((roi) -> {
+            RM.addRoi(roi);
+        });
+        RM.runCommand("save", zipFile);
+    }
+
+    public static List<Roi> openROIs(String zipFile) {
         List<Roi> rois = new ArrayList<>();
 
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile))) {
@@ -61,11 +72,17 @@ public class ROIUtils {
         return rois;
     }
 
+    @Deprecated
     public static ArrayList<Roi> filterROIbySlice(List<Roi> rois, int z_position) {
-        ArrayList<Roi> ret = new ArrayList<>();
-        if (rois != null) {
+        if (rois == null) {
+            return null;
+        }
+
+        ArrayList<Roi> ret = null;
+        {
             for (Roi r : rois) {
                 if (r.getPosition() == z_position) {
+                    ret = (ret == null) ? new ArrayList<>() : ret;
                     ret.add(r);
                 }
             }
@@ -74,7 +91,12 @@ public class ROIUtils {
         return ret;
     }
 
+    @Deprecated
     public static boolean withinROI(List<Roi> rois, int x, int y) {
+        if (rois == null) {
+            return false;
+        }
+
         for (Roi r : rois) {
             if (r.contains(x, y)) {
                 return true;
@@ -238,27 +260,25 @@ public class ROIUtils {
                                 outline[x + 1] = null;
                                 outline[x].push(x, y);
                             }
+                        } else if (outline[x + 1] == null) {
+                            outline[x + 1] = outline[x];
+                            outline[x] = null;
+                            outline[x + 1].shift(x + 1, y);
+                        } else if (outline[x + 1] == outline[x]) {
+                            //System.err.println("subtract " + outline[x]);
+                            polygons.add(outline[x].getPolygon()); // MINUS
+                            outline[x] = outline[x + 1] = null;
                         } else {
-                            if (outline[x + 1] == null) {
-                                outline[x + 1] = outline[x];
-                                outline[x] = null;
-                                outline[x + 1].shift(x + 1, y);
-                            } else if (outline[x + 1] == outline[x]) {
-                                //System.err.println("subtract " + outline[x]);
-                                polygons.add(outline[x].getPolygon()); // MINUS
-                                outline[x] = outline[x + 1] = null;
-                            } else {
-                                outline[x].shift(outline[x + 1]);
-                                for (int x1 = 0; x1 <= width; x1++) {
-                                    if (x1 != x + 1 && outline[x1] == outline[x + 1]) {
-                                        outline[x1] = outline[x];
-                                        outline[x] = outline[x + 1] = null;
-                                        break;
-                                    }
+                            outline[x].shift(outline[x + 1]);
+                            for (int x1 = 0; x1 <= width; x1++) {
+                                if (x1 != x + 1 && outline[x1] == outline[x + 1]) {
+                                    outline[x1] = outline[x];
+                                    outline[x] = outline[x + 1] = null;
+                                    break;
                                 }
-                                if (outline[x] != null) {
-                                    throw new RuntimeException("assertion failed");
-                                }
+                            }
+                            if (outline[x] != null) {
+                                throw new RuntimeException("assertion failed");
                             }
                         }
                     }
