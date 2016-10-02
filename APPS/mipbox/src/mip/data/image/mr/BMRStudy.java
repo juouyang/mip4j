@@ -9,18 +9,21 @@ import mip.util.Timer;
 
 public class BMRStudy {
 
-    final String studyRoot;
     private final String patientID;
     private final String studyID;
 
-    MRSeries T0;
-    MRSeries T1;
-    MRSeries T2;
+    public final String studyRoot;
+    public final MRSeries T0;
+    public final MRSeries T1;
+    public final MRSeries T2;
 
     public BMRStudy(Path studyRoot) {
         Timer t = new Timer();
         this.studyRoot = studyRoot.toString();
-        read_dicom_files(studyRoot);
+        MRSeries[] ret = read_dicom_files(studyRoot);
+        T0 = ret[0];
+        T1 = ret[1];
+        T2 = ret[2];
         patientID = T0.getImageArrayXY()[0].getPatientID();
         studyID = T0.getImageArrayXY()[0].getStudyID();
         t.printElapsedTime("BMRStudy");
@@ -60,7 +63,7 @@ public class BMRStudy {
     }
     //</editor-fold>
 
-    private void read_dicom_files(Path studyRoot) {
+    private MRSeries[] read_dicom_files(Path studyRoot) {
         final Path p2 = studyRoot.resolve("2");
         final Path p3 = studyRoot.resolve("3");
         final Path p4 = studyRoot.resolve("4");
@@ -111,12 +114,15 @@ public class BMRStudy {
             throw new IllegalArgumentException("Unmatched frame-count of series " + studyRoot);
         }
 
+        MRSeries[] ret = new MRSeries[3];
         try {
-            T0 = new MRSeries(t0);
-            T1 = new MRSeries(t1);
-            T2 = new MRSeries(t2);
+            ret[0] = new MRSeries(t0);
+            ret[1] = new MRSeries(t1);
+            ret[2] = new MRSeries(t2);
         } catch (InterruptedException ignore) {
         }
+
+        return ret;
     }
 
 }
