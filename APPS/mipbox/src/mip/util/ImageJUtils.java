@@ -121,4 +121,14 @@ public class ImageJUtils {
 
         return ims;
     }
+
+    public static ImageStack getByteImageStackFromBitImageArray(BitImage[] imageArray) {
+        ImageStack ims = new ImageStack(imageArray[0].getWidth(), imageArray[0].getHeight());
+
+        for (BitImage bi : imageArray) {
+            ims.addSlice(ImageJUtils.getByteProcessorFromBitImage(bi));
+        }
+
+        return ims;
+    }
 }

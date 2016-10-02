@@ -67,7 +67,12 @@ public class BitImage extends AbstractImage {
     }
 
     public Roi getRoi() {
-        return ROIUtils.createSelectionFromThreshold(getImagePlus("").getProcessor(), 255, 255);
+        for (int i = 0; i < pixelArray.length(); i++) {
+            if (pixelArray.get(i)) {
+                return ROIUtils.createSelectionFromThreshold(getImagePlus("").getProcessor(), 255, 255);
+            }
+        }
+        return null;
     }
     //</editor-fold>
 
