@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import mip.data.image.mr.BMRStudy;
 import mip.data.image.mr.Kinetic;
+import static mip.util.DebugUtils.DBG;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -525,7 +525,7 @@ public class Pathology {
 
             DBG.accept(p.toString() + "\n");
             Kinetic k = new Kinetic(new BMRStudy(p));
-            DBG.accept(k.summary.toString() + "\n--\n");
+            DBG.accept(k.getSummary().toString() + "\n--\n");
             break;
         }
     }
@@ -577,18 +577,6 @@ public class Pathology {
 
         sb.append("\n");
         return sb.toString();
-    }
-    //</editor-fold>
-
-    static final boolean IS_DEBUG = true;
-    //<editor-fold defaultstate="collapsed" desc="Debug">
-    static final Consumer<String> DBG = Pathology::debug;
-
-    private static void debug(String s) {
-        if (IS_DEBUG == true) {
-            System.out.print(s);
-
-        }
     }
     //</editor-fold>
 

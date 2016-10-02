@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.function.Consumer;
+import static mip.util.DebugUtils.DBG;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -1006,8 +1006,8 @@ public class DATA {
 
             LocalDate finalDate = (before != null)
                     ? Math.abs(closestBeforeAndEqualDateBetween) < Math.abs(closestAfterDateBetween)
-                            ? before
-                            : Math.abs(closestBeforeAndEqualDateBetween) <= 30 ? before : after
+                    ? before
+                    : Math.abs(closestBeforeAndEqualDateBetween) <= 30 ? before : after
                     : after;
             //DBG.accept(finalDate + "\n");
 
@@ -1018,15 +1018,6 @@ public class DATA {
             }
 
             return null;
-        }
-    }
-
-    static final boolean IS_DEBUG = true;
-    static final Consumer<String> DBG = DATA::debug;
-
-    private static void debug(String s) {
-        if (IS_DEBUG == true) {
-            System.out.print(s);
         }
     }
 }
