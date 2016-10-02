@@ -23,20 +23,21 @@ import mip.util.ImageJUtils;
 
 public class MRSeries {
 
-    private final static int CORES = Runtime.getRuntime().availableProcessors();
+    private final static int NUM_THREAD = Runtime.getRuntime().availableProcessors();
     private final MR[] imageArrayXY;
     private String seriesNumber;
 
-    private double pixelSpacingX;
-    private double pixelSpacingY;
-    private double sliceThickness;
+    public final double pixelSpacingX;
+    public final double pixelSpacingY;
+    public final double sliceThickness;
+    public final boolean isCompressed;
 
     public MRSeries(final ArrayList<Path> dcmFiles) throws InterruptedException {
         Collections.sort(dcmFiles, new AlphanumComparator());
         imageArrayXY = new MR[dcmFiles.size()];
 
         CountDownLatch latch = new CountDownLatch(dcmFiles.size());
-        ExecutorService e = Executors.newFixedThreadPool(CORES);
+        ExecutorService e = Executors.newFixedThreadPool(NUM_THREAD);
 
         for (int i = 0; i < dcmFiles.size(); i++) {
             e.execute(new ReadMR(latch, dcmFiles.get(i), i, imageArrayXY));
@@ -46,7 +47,11 @@ public class MRSeries {
         e.shutdown();
 
         checkSeriesNumber();
-        readSpatialResolution(dcmFiles.get(0));
+        double[] rs = readSpatialResolution(dcmFiles.get(0));
+        pixelSpacingX = rs[0];
+        pixelSpacingY = rs[1];
+        sliceThickness = rs[2];
+        isCompressed = rs[3] == 1;
     }
 
     public ImagePlus toImagePlus(String title) {
@@ -92,18 +97,6 @@ public class MRSeries {
     }
 
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
-    public double getPixelSpacingX() {
-        return pixelSpacingX;
-    }
-
-    public double getPixelSpacingY() {
-        return pixelSpacingY;
-    }
-
-    public double getSliceThickness() {
-        return sliceThickness;
-    }
-
     public MR[] getImageArrayXY() {
         return imageArrayXY;
     }
@@ -165,7 +158,7 @@ public class MRSeries {
         }
     }
 
-    private void readSpatialResolution(Path p) {
+    private double[] readSpatialResolution(Path p) {
         ImageReader reader = new ImageReader();
         StringFilter filter = new StringFilter();
         reader.SetFileName(p.toString());
@@ -211,8 +204,13 @@ public class MRSeries {
             }
         }
 
-        pixelSpacingX = psX == Double.MIN_VALUE ? 0.703125 : psX;
-        pixelSpacingY = psY == Double.MIN_VALUE ? 0.703125 : psY;
-        sliceThickness = st == Double.MIN_VALUE ? 1.125 : st;
+        psX = psX == Double.MIN_VALUE ? 0.703125 : psX;
+        psY = psY == Double.MIN_VALUE ? 0.703125 : psY;
+        st = st == Double.MIN_VALUE ? 1.125 : st;
+
+        String transferSyntaxUID = filter.ToString(new gdcm.Tag(0x0002, 0x0010)).trim();
+        boolean compressed = transferSyntaxUID.startsWith("1.2.840.10008.1.2.4");
+
+        return new double[]{psX, psY, st, compressed ? 1 : 0};
     }
 }
