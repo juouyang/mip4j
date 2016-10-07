@@ -525,7 +525,7 @@ public class Pathology {
 
             DBG.accept(p.toString() + "\n");
             Kinetic k = new Kinetic(new BMRStudy(p));
-            DBG.accept(k.getSummary().toString() + "\n--\n");
+            DBG.accept(k + "\n--\n");
             break;
         }
     }

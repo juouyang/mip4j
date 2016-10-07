@@ -24,7 +24,6 @@ import java.util.List;
 import mip.data.Point3d;
 import mip.data.image.BitVolume;
 import static mip.util.DebugUtils.DBG;
-import static mip.util.DebugUtils.pause;
 
 import mip.util.IOUtils;
 import mip.util.ImageJUtils;
@@ -357,11 +356,11 @@ public class Kinetic {
     }
 
     private static double initialPhase(int initial, int peak) {
-        return (double) (peak - initial) / (double) initial;
+        return (peak - initial) / (double) initial;
     }
 
     private static double delayPhase(int initial, int delay) {
-        return (double) (delay - initial) / (double) initial;
+        return (delay - initial) / (double) initial;
     }
 
     private KineticType mapping(int initial, int peak, int delay) {
@@ -387,7 +386,7 @@ public class Kinetic {
         return ret;
     }
 
-    public enum KineticType {
+    private enum KineticType {
 
         GLAND("Glandular", new Color(12, 12, 12)), WASHOUT("Washout", Color.RED), PLATEAU("Plateau", Color.MAGENTA), PERSIST("Persistent", Color.YELLOW), EDEMA("Edema", Color.GREEN), FLUID("Fluid", Color.BLUE), UNMAPPED("Unmapped", null);
         private final String description;

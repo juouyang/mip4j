@@ -6,7 +6,6 @@
 package mip.data.image.mr;
 
 import java.io.File;
-import mip.data.image.mr.Kinetic.KineticType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
