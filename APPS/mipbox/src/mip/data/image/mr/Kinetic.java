@@ -3,7 +3,6 @@ package mip.data.image.mr;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.io.Opener;
 import ij.process.ByteProcessor;
@@ -18,13 +17,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.io.IOException;
-
 import java.text.DecimalFormat;
-import java.util.List;
+import java.util.logging.Logger;
 import mip.data.Point3d;
 import mip.data.image.BitVolume;
-import static mip.util.DebugUtils.DBG;
-
 import mip.util.IOUtils;
 import mip.util.ImageJUtils;
 import mip.util.ROIUtils;
@@ -37,6 +33,24 @@ public class Kinetic {
     private static final double AURORA_DELAYED_WASHOUT = -0.05;
     private static final double AURORA_DELAYED_PERSIST = 0.05;
     private static final DecimalFormat DF = new DecimalFormat("0.0000;-0.0000");
+    private static final Logger LOG = Logger.getLogger(Kinetic.class.getName());
+
+    public static void main(String[] args) throws IOException {
+        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
+        Point3d seed = new Point3d(376, 267, 71);
+        BitVolume selected = BitVolume.regionGrowingByKinetic(k, seed);
+        k.setVOI(selected, null);
+        k.render();
+    }
+
+    private static double initialPhase(int initial, int peak) {
+        return (peak - initial) / (double) initial;
+    }
+
+    private static double delayPhase(int initial, int delay) {
+        return (delay - initial) / (double) initial;
+    }
 
     private final double STRONG_ENHANCE = AURORA_STRONG_ENHANCE;
     private final double GLANDULAR;
@@ -45,7 +59,7 @@ public class Kinetic {
 
     public final BMRStudy mrStudy;
 
-    private final StringBuilder summary = new StringBuilder();
+    private final StringBuilder summary = new StringBuilder(250);
     private String roiFilePath;
     private BitVolume selectedVOI;
     private boolean onlyVOI;
@@ -62,27 +76,12 @@ public class Kinetic {
 
     public Kinetic(BMRStudy mrs, String roiFile, double delayedWashout, double delayedPersist, boolean noBackground, boolean doColorMapping, boolean doOnlyVOI) {
         mrStudy = mrs;
-        selectedVOI = initVOI(roiFile);
+        setVOI(null, roiFile);
         NO_BACKGROUND = noBackground;
         PLATEAU_RANGE = Range.between(delayedWashout, delayedPersist);
         GLANDULAR = initGlandular();
         imp = (doColorMapping) ? colorMapping(doOnlyVOI) : null;
         onlyVOI = doOnlyVOI;
-    }
-
-    public static void main(String[] args) throws IOException {
-        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
-        final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
-        k.show();
-        Point3d seed = new Point3d(376, 267, 71);
-        BitVolume selected = BitVolume.regionGrowingByKinetic(k, seed);
-        List<Roi> rois = selected.getROIs();
-        final String roiFile = "/tmp/foo.zip";
-        ROIUtils.saveROIs(rois, roiFile);
-        k.setVOI(roiFile);
-        DBG.accept(k + "\n");
-        k.show();
-        k.render();
     }
 
     public void save() throws IOException {
@@ -91,31 +90,6 @@ public class Kinetic {
     }
 
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
-    private BitVolume initVOI(String roiFile) {
-        roiFilePath = (IOUtils.fileExisted(roiFile)) ? roiFile : null;
-        if (roiFilePath == null) {
-            return null;
-        }
-
-        int w = getWidth();
-        int h = getHeight();
-        int l = getSize();
-        BitVolume bv = new BitVolume(w, h, l);
-        List<Roi> rois = ROIUtils.openROIs(roiFilePath);
-        rois.stream().forEach((roi) -> {
-            int z = roi.getPosition() - 1;
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    if (roi.contains(x, y)) {
-                        bv.setPixel(x, y, z, true);
-                    }
-                }
-            }
-        });
-
-        return bv;
-    }
-
     private double initGlandular() {
         MR firstMiddleSlice = mrStudy.T0.getImageArrayXY()[mrStudy.T0.getSize() / 2];
         ImageStatistics is = new ShortStatistics(ImageJUtils.getShortProcessorFromShortImage(firstMiddleSlice));
@@ -125,9 +99,14 @@ public class Kinetic {
         return glandularNoiseRatio * noiseFloor;
     }
 
-    public void setVOI(String roiFile) {
-        selectedVOI = initVOI(roiFile);
-        imp = colorMapping(true);
+    public final void setVOI(BitVolume bv, String roiFile) {
+        roiFilePath = (IOUtils.fileExisted(roiFile)) ? roiFile : null;
+        selectedVOI = (bv == null) ? ROIUtils.openROIs(roiFilePath, getWidth(), getHeight(), getSize()) : bv;
+        onlyVOI = bv != null;
+
+        if (onlyVOI) {
+            colorMapping(onlyVOI);
+        }
     }
 
     public boolean isStrongEnhanced(int x, int y, int z) {
@@ -196,7 +175,7 @@ public class Kinetic {
 
     public void render() {
         Image3DUniverse univ = new Image3DUniverse();
-        ContentInstant ci = univ.addVoltex(imp, 1).getCurrent();
+        ContentInstant ci = univ.addVoltex(getImagePlue(), 1).getCurrent();
 
         if (ci != null) {
             univ.show();
@@ -204,7 +183,7 @@ public class Kinetic {
     }
 
     private boolean hasROI() {
-        return roiFilePath != null;
+        return selectedVOI != null;
     }
 
     public KineticType getKinetic(int x, int y, int z) {
@@ -355,14 +334,6 @@ public class Kinetic {
         return ret;
     }
 
-    private static double initialPhase(int initial, int peak) {
-        return (peak - initial) / (double) initial;
-    }
-
-    private static double delayPhase(int initial, int delay) {
-        return (delay - initial) / (double) initial;
-    }
-
     private KineticType mapping(int initial, int peak, int delay) {
 
         final double R1 = initialPhase(initial, peak);
@@ -384,23 +355,6 @@ public class Kinetic {
         }
 
         return ret;
-    }
-
-    private enum KineticType {
-
-        GLAND("Glandular", new Color(12, 12, 12)), WASHOUT("Washout", Color.RED), PLATEAU("Plateau", Color.MAGENTA), PERSIST("Persistent", Color.YELLOW), EDEMA("Edema", Color.GREEN), FLUID("Fluid", Color.BLUE), UNMAPPED("Unmapped", null);
-        private final String description;
-        final Color color;
-
-        private KineticType(String s, Color c) {
-            description = s;
-            color = c;
-        }
-
-        @Override
-        public String toString() {
-            return this.description;
-        }
     }
 
 }

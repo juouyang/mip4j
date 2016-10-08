@@ -7,21 +7,20 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Polygon;
 import java.awt.geom.GeneralPath;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import mip.data.image.BitVolume;
 
 public class ROIUtils {
 
-    private ROIUtils() { // singleton
-    }
-
     private static final RoiManager RM = new RoiManager(true);
+    private static final Logger LOG = Logger.getLogger(ROIUtils.class.getName());
 
     public static void saveROIs(List<Roi> rois, String zipFile) {
 
@@ -31,8 +30,29 @@ public class ROIUtils {
         RM.runCommand("save", zipFile);
     }
 
+    public static BitVolume openROIs(String zipFile, int w, int h, int l) {
+        if (!IOUtils.fileExisted(zipFile)) {
+            return null;
+        }
+
+        BitVolume bv = new BitVolume(w, h, l);
+        List<Roi> rois = ROIUtils.openROIs(zipFile);
+        rois.stream().forEach((roi) -> {
+            int z = roi.getPosition() - 1;
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    if (roi.contains(x, y)) {
+                        bv.setPixel(x, y, z, true);
+                    }
+                }
+            }
+        });
+
+        return bv;
+    }
+
     public static List<Roi> openROIs(String zipFile) {
-        List<Roi> rois = new ArrayList<>();
+        List<Roi> rois = new ArrayList<>(10);
 
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile))) {
             while (true) {
@@ -72,148 +92,11 @@ public class ROIUtils {
         return rois;
     }
 
-    @Deprecated
-    public static ArrayList<Roi> filterROIbySlice(List<Roi> rois, int z_position) {
-        if (rois == null) {
-            return null;
-        }
-
-        ArrayList<Roi> ret = null;
-        {
-            for (Roi r : rois) {
-                if (r.getPosition() == z_position) {
-                    ret = (ret == null) ? new ArrayList<>() : ret;
-                    ret.add(r);
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    @Deprecated
-    public static boolean withinROI(List<Roi> rois, int x, int y) {
-        if (rois == null) {
-            return false;
-        }
-
-        for (Roi r : rois) {
-            if (r.contains(x, y)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static boolean selected(ImageProcessor ip, int x, int y, float min, float max) {
         float v = ip.getf(x, y);
         return v >= min && v <= max;
     }
 
-    /*
-     * This class implements a Cartesian polygon in progress.
-     * The edges are supposed to be of unit length, and parallel to one axis.
-     * It is implemented as a deque to be able to add points to both sides.
-     * The points should be added such that for each pair of consecutive points, the inner part is on the left.
-     */
-    static class Outline {
-
-        int[] x, y;
-        int first, last, reserved;
-        final int GROW = 10;
-
-        public Outline() {
-            reserved = GROW;
-            x = new int[reserved];
-            y = new int[reserved];
-            first = last = GROW / 2;
-        }
-
-        private void needs(int newCount, int offset) {
-            if (newCount > reserved || (offset > first)) {
-                if (newCount < reserved + GROW + 1) {
-                    newCount = reserved + GROW + 1;
-                }
-                int[] newX = new int[newCount];
-                int[] newY = new int[newCount];
-                System.arraycopy(x, 0, newX, offset, last);
-                System.arraycopy(y, 0, newY, offset, last);
-                x = newX;
-                y = newY;
-                first += offset;
-                last += offset;
-                reserved = newCount;
-            }
-        }
-
-        public void push(int x, int y) {
-            needs(last + 1, 0);
-            this.x[last] = x;
-            this.y[last] = y;
-            last++;
-        }
-
-        public void shift(int x, int y) {
-            needs(last + 1, GROW);
-            first--;
-            this.x[first] = x;
-            this.y[first] = y;
-        }
-
-        public void push(Outline o) {
-            int count = o.last - o.first;
-            needs(last + count, 0);
-            System.arraycopy(o.x, o.first, x, last, count);
-            System.arraycopy(o.y, o.first, y, last, count);
-            last += count;
-        }
-
-        public void shift(Outline o) {
-            int count = o.last - o.first;
-            needs(last + count + GROW, count + GROW);
-            first -= count;
-            System.arraycopy(o.x, o.first, x, first, count);
-            System.arraycopy(o.y, o.first, y, first, count);
-        }
-
-        public Polygon getPolygon() {
-            // optimize out long straight lines
-            int i, j = first + 1;
-            for (i = first + 1; i + 1 < last; j++) {
-                int x1 = x[j] - x[j - 1];
-                int y1 = y[j] - y[j - 1];
-                int x2 = x[j + 1] - x[j];
-                int y2 = y[j + 1] - y[j];
-                if (x1 * y2 == x2 * y1) {
-                    // merge i + 1 into i
-                    last--;
-                    continue;
-                }
-                if (i != j) {
-                    x[i] = x[j];
-                    y[i] = y[j];
-                }
-                i++;
-            }
-            // wraparound
-            int x1 = x[j] - x[j - 1];
-            int y1 = y[j] - y[j - 1];
-            int x2 = x[first] - x[j];
-            int y2 = y[first] - y[j];
-            if (x1 * y2 == x2 * y1) {
-                last--;
-            } else {
-                x[i] = x[j];
-                y[i] = y[j];
-            }
-            int count = last - first;
-            int[] xNew = new int[count];
-            int[] yNew = new int[count];
-            System.arraycopy(x, first, xNew, 0, count);
-            System.arraycopy(y, first, yNew, 0, count);
-            return new Polygon(xNew, yNew, count);
-        }
-    }
 
     /*
      * Construct all outlines simultaneously by traversing the rows from top to bottom.
@@ -360,6 +243,117 @@ public class ROIUtils {
             return roi;
         } else {
             return shape;
+        }
+    }
+
+    private ROIUtils() {
+    }
+
+    /*
+     * This class implements a Cartesian polygon in progress.
+     * The edges are supposed to be of unit length, and parallel to one axis.
+     * It is implemented as a deque to be able to add points to both sides.
+     * The points should be added such that for each pair of consecutive points, the inner part is on the left.
+     */
+    private static class Outline {
+
+        int[] x;
+        int[] y;
+        int first;
+        int last;
+        int reserved;
+        final int GROW = 10;
+
+        Outline() {
+            reserved = GROW;
+            x = new int[reserved];
+            y = new int[reserved];
+            first = last = GROW / 2;
+        }
+
+        private void needs(int newCount, int offset) {
+            if (newCount > reserved || (offset > first)) {
+                if (newCount < reserved + GROW + 1) {
+                    newCount = reserved + GROW + 1;
+                }
+                int[] newX = new int[newCount];
+                int[] newY = new int[newCount];
+                System.arraycopy(x, 0, newX, offset, last);
+                System.arraycopy(y, 0, newY, offset, last);
+                x = newX;
+                y = newY;
+                first += offset;
+                last += offset;
+                reserved = newCount;
+            }
+        }
+
+        public void push(int x, int y) {
+            needs(last + 1, 0);
+            this.x[last] = x;
+            this.y[last] = y;
+            last++;
+        }
+
+        public void shift(int x, int y) {
+            needs(last + 1, GROW);
+            first--;
+            this.x[first] = x;
+            this.y[first] = y;
+        }
+
+        public void push(Outline o) {
+            int count = o.last - o.first;
+            needs(last + count, 0);
+            System.arraycopy(o.x, o.first, x, last, count);
+            System.arraycopy(o.y, o.first, y, last, count);
+            last += count;
+        }
+
+        public void shift(Outline o) {
+            int count = o.last - o.first;
+            needs(last + count + GROW, count + GROW);
+            first -= count;
+            System.arraycopy(o.x, o.first, x, first, count);
+            System.arraycopy(o.y, o.first, y, first, count);
+        }
+
+        public Polygon getPolygon() {
+            // optimize out long straight lines
+            int i, j = first + 1;
+            for (i = first + 1; i + 1 < last; j++) {
+                int x1 = x[j] - x[j - 1];
+                int y1 = y[j] - y[j - 1];
+                int x2 = x[j + 1] - x[j];
+                int y2 = y[j + 1] - y[j];
+                if (x1 * y2 == x2 * y1) {
+                    // merge i + 1 into i
+                    last--;
+                    continue;
+                }
+                if (i != j) {
+                    x[i] = x[j];
+                    y[i] = y[j];
+                }
+                i++;
+            }
+            // wraparound
+            int x1 = x[j] - x[j - 1];
+            int y1 = y[j] - y[j - 1];
+            int x2 = x[first] - x[j];
+            int y2 = y[first] - y[j];
+            if (x1 * y2 == x2 * y1) {
+                last--;
+            } else {
+                x[i] = x[j];
+                y[i] = y[j];
+            }
+            int count = last - first;
+            int[] xNew = new int[count];
+            int[] yNew = new int[count];
+            System.arraycopy(x, first, xNew, 0, count);
+            System.arraycopy(y, first, yNew, 0, count);
+            return new Polygon(xNew, yNew, count);
         }
     }
 }
