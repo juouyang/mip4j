@@ -3,7 +3,7 @@ package mip.data.image;
 import ij.ImagePlus;
 import mip.data.image.mr.MR;
 import mip.util.IOUtils;
-import mip.util.ImageJUtils;
+import mip.util.IJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ShortImageFrame;
 
@@ -52,7 +52,7 @@ public class ShortImage extends AbstractImage {
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
     protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getShortProcessorFromShortImage(this));
+        return new ImagePlus(title, IJUtils.getProcessorFromShortImage(this));
     }
 
     protected void setPixel(int x, int y, int v) {

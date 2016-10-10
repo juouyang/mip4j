@@ -48,22 +48,6 @@ public class KineticTest {
      */
     @Test
     public void testShow() {
-        instance.show();
-    }
-
-    /**
-     * Test of render method, of class ColorMapping.
-     */
-    @Test
-    public void testRender() {
-        instance.render();
-    }
-
-    /**
-     * Test of getKinetic method, of class Kinetic.
-     */
-    @Test
-    public void testGetKinetic() {
-        assertEquals(KineticType.UNMAPPED, instance.getKinetic(0, 0, 0));
+        instance.show(instance.colorMapping(null));
     }
 }

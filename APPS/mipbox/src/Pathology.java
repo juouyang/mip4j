@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import mip.data.image.mr.BMRStudy;
-import mip.data.image.mr.Kinetic;
+import mip.data.image.mr.KineticOld;
 import static mip.util.DebugUtils.DBG;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -524,7 +524,7 @@ public class Pathology {
             assert (p.toFile().exists());
 
             DBG.accept(p.toString() + "\n");
-            Kinetic k = new Kinetic(new BMRStudy(p));
+            KineticOld k = new KineticOld(new BMRStudy(p));
             DBG.accept(k + "\n--\n");
             break;
         }

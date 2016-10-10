@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import mip.util.IOUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import static mip.util.DebugUtils.DBG;
 import mip.util.Timer;
 
 public class BMRStudy {
@@ -24,16 +25,16 @@ public class BMRStudy {
         T0 = ret[0];
         T1 = ret[1];
         T2 = ret[2];
-        patientID = T0.getImageArrayXY()[0].getPatientID();
-        studyID = T0.getImageArrayXY()[0].getStudyID();
+        patientID = T0.imageArrayXY[0].getPatientID();
+        studyID = T0.imageArrayXY[0].getStudyID();
         t.printElapsedTime("BMRStudy");
     }
 
     public static void main(String[] args) {
-        File studyRoot = new File(Kinetic.class.getClassLoader().getResource("resources/bmr/").getFile());
+        File studyRoot = new File(BMRStudy.class.getClassLoader().getResource("resources/bmr/").getFile());
         BMRStudy mrs = new BMRStudy(studyRoot.toPath());
-        System.out.println(mrs.getStudyID());
-        System.out.println(mrs.getPatientID());
+        DBG.accept(mrs.getStudyID() + "\n");
+        DBG.accept(mrs.getPatientID() + "\n");
     }
 
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
@@ -64,6 +65,7 @@ public class BMRStudy {
     //</editor-fold>
 
     private MRSeries[] read_dicom_files(Path studyRoot) {
+        DBG.accept(studyRoot + "\n");
         final Path p2 = studyRoot.resolve("2");
         final Path p3 = studyRoot.resolve("3");
         final Path p4 = studyRoot.resolve("4");

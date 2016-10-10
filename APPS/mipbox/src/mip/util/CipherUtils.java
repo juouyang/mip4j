@@ -7,6 +7,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import static mip.util.DebugUtils.DBG;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -43,13 +44,13 @@ public class CipherUtils {
 
         String strToEncrypt = "foo";
         final String encryptedStr = CipherUtils.encrypt(strToEncrypt.trim());
-        System.out.println("String to Encrypt : " + strToEncrypt);
-        System.out.println("Encrypted : " + encryptedStr);
+        DBG.accept("String to Encrypt : " + strToEncrypt + "\n");
+        DBG.accept("Encrypted : " + encryptedStr + "\n");
 
         final String strToDecrypt = encryptedStr;
         final String decryptedStr = CipherUtils.decrypt(strToDecrypt.trim());
-        System.out.println("String To Decrypt : " + strToDecrypt);
-        System.out.println("Decrypted : " + decryptedStr);
+        DBG.accept("String To Decrypt : " + strToDecrypt + "\n");
+        DBG.accept("Decrypted : " + decryptedStr + "\n");
 
     }
 }

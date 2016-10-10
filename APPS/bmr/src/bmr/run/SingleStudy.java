@@ -20,18 +20,18 @@ public class SingleStudy {
      * @throws java.io.IOException args[0] / result.txt
      */
     public static void main(String[] args) throws IOException {
-        final Path studyRoot = Paths.get(args[0]);
-        final String studyID = studyRoot.getFileName().toString();
-        final String roiRoot = args[1];
-        final String roiFile = get_roi_file(studyID, roiRoot);
-        final double delayWashout = (args.length == 4) ? Double.parseDouble(args[2]) : -0.05;
-        final double delayPlateau = (args.length == 4) ? Double.parseDouble(args[3]) : 0.05;
-        final BMRStudy mrStudy = new BMRStudy(studyRoot);
-        final Kinetic cm = new Kinetic(mrStudy, roiFile, delayWashout, delayPlateau);
-        cm.show();
-        cm.save();
-
-        System.out.println(cm.result.toString());
+//        final Path studyRoot = Paths.get(args[0]);
+//        final String studyID = studyRoot.getFileName().toString();
+//        final String roiRoot = args[1];
+//        final String roiFile = get_roi_file(studyID, roiRoot);
+//        final double delayWashout = (args.length == 4) ? Double.parseDouble(args[2]) : -0.05;
+//        final double delayPlateau = (args.length == 4) ? Double.parseDouble(args[3]) : 0.05;
+//        final BMRStudy mrStudy = new BMRStudy(studyRoot);
+//        final Kinetic cm = new Kinetic(mrStudy, roiFile, delayWashout, delayPlateau);
+//        cm.show();
+//        cm.save();
+//
+//        System.out.println(cm.result.toString());
     }
 
     private static String get_roi_file(String studyID, String roiRoot) {

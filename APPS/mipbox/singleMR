@@ -1,0 +1,1 @@
+java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@

@@ -1,13 +1,16 @@
 package mip.util;
 
+import ij.IJ;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
+import ij.io.Opener;
 import ij.io.RoiDecoder;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Polygon;
 import java.awt.geom.GeneralPath;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,15 +22,34 @@ import mip.data.image.BitVolume;
 
 public class ROIUtils {
 
-    private static final RoiManager RM = new RoiManager(true);
+    private static final RoiManager SAVER = new RoiManager(true);
     private static final Logger LOG = Logger.getLogger(ROIUtils.class.getName());
 
-    public static void saveROIs(List<Roi> rois, String zipFile) {
+    public static void showROI(String zipFile) {
+        RoiManager rm = RoiManager.getInstance();
+        if (rm != null) {
+            rm.runCommand("Select All");
+            rm.runCommand("Delete");
+            rm.close();
+        }
+        IJUtils.openImageJ();
+        IJ.getImage().setRoi(0, 0, 0, 0);
+        IJ.run("Select None");
+        if (zipFile != null) {
+            new Opener().openZip(zipFile);
+        }
+    }
 
+    public static void saveROIs(List<Roi> rois, String zipFile) {
+        new File(zipFile).delete();
+        if (SAVER.getCount() != 0) {
+            SAVER.runCommand("Select All");
+            SAVER.runCommand("Delete");
+        }
         rois.stream().forEach((roi) -> {
-            RM.addRoi(roi);
+            SAVER.addRoi(roi);
         });
-        RM.runCommand("save", zipFile);
+        SAVER.runCommand("save", zipFile);
     }
 
     public static BitVolume openROIs(String zipFile, int w, int h, int l) {
@@ -148,7 +170,6 @@ public class ROIUtils {
                             outline[x] = null;
                             outline[x + 1].shift(x + 1, y);
                         } else if (outline[x + 1] == outline[x]) {
-                            //System.err.println("subtract " + outline[x]);
                             polygons.add(outline[x].getPolygon()); // MINUS
                             outline[x] = outline[x + 1] = null;
                         } else {
@@ -195,7 +216,6 @@ public class ROIUtils {
                             outline[x] = null;
                             outline[x + 1].push(x + 1, y);
                         } else if (outline[x + 1] == outline[x]) {
-                            //System.err.println("add " + outline[x]);
                             polygons.add(outline[x].getPolygon()); // PLUS
                             outline[x] = outline[x + 1] = null;
                         } else {

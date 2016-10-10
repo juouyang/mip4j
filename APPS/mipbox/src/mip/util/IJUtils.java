@@ -1,16 +1,75 @@
 package mip.util;
 
+import ij.IJ;
+import ij.ImageJ;
+import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.ImageWindow;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ShortProcessor;
+import ij.process.StackConverter;
+import ij3d.ContentInstant;
+import ij3d.Image3DUniverse;
+import ij3d.ImageWindow3D;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import mip.data.image.BitImage;
 import mip.data.image.ColorImage;
 import mip.data.image.ShortImage;
 
-public class ImageJUtils {
+public class IJUtils {
 
-    private ImageJUtils() { // singleton
+    private static final Image3DUniverse UNIV = new Image3DUniverse();
+
+    private IJUtils() { // singleton
+    }
+
+    public static ImageJ openImageJ() {
+        ImageJ ij = (IJ.getInstance() == null) ? new ImageJ() : IJ.getInstance();
+        ij.exitWhenQuitting(true);
+        return ij;
+    }
+
+    public static void render(ImagePlus i) {
+        Timer t = new Timer();
+
+        UNIV.removeAllContents();
+        final ImagePlus imp = i.duplicate();
+        new StackConverter(imp).convertToGray8();
+
+        ContentInstant ci = UNIV.addVoltex(imp, 1).getCurrent();
+
+        if (ci == null) {
+            return;
+        }
+
+        if (UNIV.getWindow() == null) {
+            UNIV.show();
+            final ImageWindow3D iw = UNIV.getWindow();
+            iw.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent we) {
+                    UNIV.removeAllContents();
+                    new Thread(() -> {
+                        UNIV.cleanup();
+                        System.gc();
+                        System.exit(0);
+                    }, "Close 3D view thread").start();
+                }
+            });
+        }
+
+        t.printElapsedTime("render");
+    }
+
+    public static void exitWhenNoWindow(ImageWindow iw) {
+        iw.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent we) {
+                System.exit(0);
+            }
+        });
     }
 
     public static ByteProcessor getByteProcessorFromBitImage(BitImage bi) {
@@ -47,7 +106,7 @@ public class ImageJUtils {
         return ip;
     }
 
-    public static ShortProcessor getShortProcessorFromShortImage(ShortImage si) {
+    public static ShortProcessor getProcessorFromShortImage(ShortImage si) {
         ShortProcessor ip = new ShortProcessor(si.getWidth(), si.getHeight());
 
         short imgMin = si.getMin();
@@ -95,11 +154,11 @@ public class ImageJUtils {
         return ip;
     }
 
-    public static ImageStack getShortImageStackFromShortImageArray(ShortImage[] imageArray) {
+    public static ImageStack getImageStackFromShortImages(ShortImage[] imageArray) {
         ImageStack ims = new ImageStack(imageArray[0].getWidth(), imageArray[0].getHeight());
 
         for (ShortImage si : imageArray) {
-            ims.addSlice(ImageJUtils.getShortProcessorFromShortImage(si));
+            ims.addSlice(IJUtils.getProcessorFromShortImage(si));
         }
 
         return ims;
@@ -116,7 +175,7 @@ public class ImageJUtils {
         ImageStack ims = new ImageStack(imageArray[0].getWidth(), imageArray[0].getHeight());
 
         for (ShortImage si : imageArray) {
-            ims.addSlice(ImageJUtils.getByteProcessorFromShortImage(si, windowCenter, widowWidth));
+            ims.addSlice(IJUtils.getByteProcessorFromShortImage(si, windowCenter, widowWidth));
         }
 
         return ims;
@@ -126,7 +185,7 @@ public class ImageJUtils {
         ImageStack ims = new ImageStack(imageArray[0].getWidth(), imageArray[0].getHeight());
 
         for (BitImage bi : imageArray) {
-            ims.addSlice(ImageJUtils.getByteProcessorFromBitImage(bi));
+            ims.addSlice(IJUtils.getByteProcessorFromBitImage(bi));
         }
 
         return ims;

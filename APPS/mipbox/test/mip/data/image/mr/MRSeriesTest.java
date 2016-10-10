@@ -47,21 +47,6 @@ public class MRSeriesTest {
     }
 
     /**
-     * Test of getImageArrayXY method, of class MRSeries.
-     *
-     * @throws java.io.IOException
-     */
-    @Test
-    public void testGetImageArrayXY() throws IOException {
-        MR[] result = instance.getImageArrayXY();
-        String pre = "";
-        for (MR mr : result) {
-            String cur = mr.getInstanceNumber();
-            assertTrue(cur.compareTo(pre) > 0);
-        }
-    }
-
-    /**
      * Test of getWidth method, of class MRSeries.
      */
     @Test

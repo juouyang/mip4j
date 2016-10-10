@@ -6,7 +6,7 @@ import java.io.IOException;
 import mip.data.Component;
 import mip.data.image.mr.MR;
 import mip.util.IOUtils;
-import mip.util.ImageJUtils;
+import mip.util.IJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ColorImageFrame;
 
@@ -61,7 +61,7 @@ public class ColorImage extends AbstractImage {
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
     protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getColorProcessorFromColorImage(this));
+        return new ImagePlus(title, IJUtils.getColorProcessorFromColorImage(this));
     }
 
     public void setPixel(int x, int y, int r, int g, int b) {

@@ -1,6 +1,7 @@
 package mip.util;
 
 import java.util.concurrent.ConcurrentHashMap;
+import static mip.util.DebugUtils.DBG;
 
 public class Timer {
 
@@ -11,7 +12,7 @@ public class Timer {
     }
 
     public void printElapsedTime(String tag) {
-        System.out.println("[" + tag + "]\t" + format(getElapsedTime()));
+        DBG.accept("[" + tag + "]\t" + format(getElapsedTime()) + "\n");
     }
 
     private double getElapsedTime() {

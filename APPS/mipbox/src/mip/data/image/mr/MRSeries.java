@@ -19,12 +19,12 @@ import java.util.concurrent.Executors;
 import mip.util.AlphanumComparator;
 import mip.util.IOUtils;
 
-import mip.util.ImageJUtils;
+import mip.util.IJUtils;
 
 public class MRSeries {
 
     private final static int NUM_THREAD = Runtime.getRuntime().availableProcessors();
-    private final MR[] imageArrayXY;
+    public final MR[] imageArrayXY;
     private String seriesNumber;
 
     public final double pixelSpacingX;
@@ -55,11 +55,11 @@ public class MRSeries {
     }
 
     public ImagePlus toImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getShortImageStackFromShortImageArray(imageArrayXY));
+        return new ImagePlus(title, IJUtils.getImageStackFromShortImages(imageArrayXY));
     }
 
     public void mip() {
-        ImagePlus seriesImage = new ImagePlus(seriesNumber, ImageJUtils.getShortImageStackFromShortImageArray(imageArrayXY));
+        ImagePlus seriesImage = new ImagePlus(seriesNumber, IJUtils.getImageStackFromShortImages(imageArrayXY));
         ZProjector z = new ZProjector(seriesImage);
         z.setMethod(1);
         z.doProjection();
@@ -67,7 +67,7 @@ public class MRSeries {
     }
 
     public void show(int p) {
-        ImagePlus seriesImage = new ImagePlus(seriesNumber, ImageJUtils.getShortImageStackFromShortImageArray(imageArrayXY));
+        ImagePlus seriesImage = new ImagePlus(seriesNumber, IJUtils.getImageStackFromShortImages(imageArrayXY));
         seriesImage.show();
         seriesImage.setPosition(p);
     }
@@ -77,7 +77,7 @@ public class MRSeries {
         ij.exitWhenQuitting(true);
 
         Image3DUniverse univ = new Image3DUniverse();
-        ImagePlus imp = new ImagePlus("", ImageJUtils.getByteImageStackFromShortImageArray(this.imageArrayXY, this.getImageArrayXY()[0].getWindowCenter(), this.getImageArrayXY()[0].getWindowWidth()));
+        ImagePlus imp = new ImagePlus("", IJUtils.getByteImageStackFromShortImageArray(this.imageArrayXY, this.imageArrayXY[0].getWindowCenter(), this.imageArrayXY[0].getWindowWidth()));
 
         new StackConverter(imp).convertToGray8();
 
@@ -97,10 +97,6 @@ public class MRSeries {
     }
 
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
-    public MR[] getImageArrayXY() {
-        return imageArrayXY;
-    }
-
     public int getWidth() {
         return imageArrayXY[0].getWidth();
     }

@@ -5,19 +5,20 @@
  */
 package mip.data.image;
 
-import ij.ImageJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.process.StackConverter;
 import ij3d.ContentInstant;
-import ij3d.Image3DUniverse;
+import ij3d.ImageWindow3D;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 import mip.data.Point3d;
 import mip.data.image.mr.Kinetic;
-import mip.util.ImageJUtils;
+import mip.util.IJUtils;
 import mip.util.Timer;
 
 /**
@@ -25,72 +26,65 @@ import mip.util.Timer;
  * @author ju
  */
 public class BitVolume {
-    
+
     private final BitImage[] imageArrayXY;
-    
+
     public BitVolume(int width, int height, int size) {
         imageArrayXY = new BitImage[size];
         for (int i = 0; i < size; i++) {
             imageArrayXY[i] = new BitImage(width, height);
         }
     }
-    
+
     public void setPixel(int x, int y, int z, boolean v) {
         imageArrayXY[z].setPixel(x, y, v);
     }
-    
+
     public boolean getPixel(int x, int y, int z) {
         return imageArrayXY[z].getPixel(x, y);
     }
-    
+
     public void show() {
-        new ImagePlus("", ImageJUtils.getByteImageStackFromBitImageArray(imageArrayXY)).show();
+        new ImagePlus("", IJUtils.getByteImageStackFromBitImageArray(imageArrayXY)).show();
     }
-    
+
     public void render() {
-        ImageJ ij = new ImageJ();
-        ij.exitWhenQuitting(true);
-        
-        Image3DUniverse univ = new Image3DUniverse();
-        ImagePlus imp = new ImagePlus("", ImageJUtils.getByteImageStackFromBitImageArray(this.imageArrayXY));
-        
-        new StackConverter(imp).convertToGray8();
-        
-        ContentInstant ci = univ.addVoltex(imp, 2).getCurrent();
-        
-        if (ci != null) {
-            univ.show();
-        }
+        ImagePlus imp = new ImagePlus("", IJUtils.getByteImageStackFromBitImageArray(this.imageArrayXY));
+        IJUtils.render(imp);
     }
-    
-    public static BitVolume regionGrowingByKinetic(Kinetic k, Point3d seed) {
-        BitVolume selected = new BitVolume(k.getWidth(), k.getHeight(), k.getSize());
-        
-        if (!k.isStrongEnhanced(seed.x, seed.y, seed.z)) {
+
+    public static BitVolume regionGrowing(Kinetic k, Point3d seed) {
+        Timer t = new Timer();
+
+        BitVolume selected = new BitVolume(k.width, k.height, k.size);
+
+        /*if (!k.isStrongEnhanced(seed.x, seed.y, seed.z)) {
             return null;
-        }
-        
+        }*/
         Stack<Point3d> s = new Stack<>();
-        BitVolume checked = new BitVolume(k.getWidth(), k.getHeight(), k.getSize());
+        BitVolume checked = new BitVolume(k.width, k.height, k.size);
         Point3d p = seed;
         s.push(p);
         checked.setPixel(seed.x, seed.y, seed.z, true);
-        
+
         while (!s.isEmpty()) {
             p = s.pop();
             selected.setPixel(p.x, p.y, p.z, true);
-            
+
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dz = -1; dz <= 1; dz++) {
                         int nx = p.x + dx;
                         int ny = p.y + dy;
                         int nz = p.z + dz;
-                        
+                        nx = nx < 0 ? 0 : nx >= k.width ? k.width - 1 : nx;
+                        ny = ny < 0 ? 0 : ny >= k.height ? k.height - 1 : ny;
+                        nz = nz < 0 ? 0 : nz >= k.size ? k.size - 1 : nz;
+
                         if (checked.getPixel(nx, ny, nz)) {
                             continue;
                         }
-                        
+
                         if (k.isStrongEnhanced(nx, ny, nz)) {
                             Point3d np = new Point3d(nx, ny, nz);
                             s.push(np);
@@ -101,14 +95,16 @@ public class BitVolume {
             }
         }
         
+        t.printElapsedTime("regionGrowing");
+
         return selected;
     }
-    
+
     public List<Roi> getROIs() {
         Timer t = new Timer();
-        
+
         List<Roi> rois = new ArrayList<>();
-        
+
         int i = 0;
         for (BitImage bi : imageArrayXY) {
             i++;
@@ -119,28 +115,29 @@ public class BitVolume {
             roi.setPosition(i);
             rois.add(roi);
         }
-        
+
         t.printElapsedTime("getROIs");
         return rois;
     }
-    
+
     public static void main(String[] args) {
         BitVolume bv = new BitVolume(512, 512, 256);
         Point3d p = new Point3d(256, 256, 128);
-        
+        final Random random = new Random();
+
         for (int i = 0; i < 100000; i++) {
-            p.x = new Random().nextBoolean() ? p.x - 1 : p.x + 1;
-            p.y = new Random().nextBoolean() ? p.y - 1 : p.y + 1;
-            p.z = new Random().nextBoolean() ? p.z - 1 : p.z + 1;
+            p.x = random.nextBoolean() ? p.x - 1 : p.x + 1;
+            p.y = random.nextBoolean() ? p.y - 1 : p.y + 1;
+            p.z = random.nextBoolean() ? p.z - 1 : p.z + 1;
             p.x = p.x >= 512 ? 511 : p.x < 0 ? 0 : p.x;
             p.y = p.y >= 512 ? 511 : p.y < 0 ? 0 : p.y;
             p.z = p.z >= 256 ? 255 : p.z < 0 ? 0 : p.z;
             bv.setPixel(p.x, p.y, p.z, true);
         }
-        
+
         bv.getROIs();
         bv.show();
         bv.render();
     }
-    
+
 }

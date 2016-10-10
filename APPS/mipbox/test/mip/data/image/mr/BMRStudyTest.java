@@ -65,22 +65,6 @@ public class BMRStudyTest {
     }
 
     /**
-     * Test of MRSeries member, of class BMRStudy.
-     *
-     * @throws java.io.IOException
-     */
-    @Test
-    public void testAllSereis() throws IOException {
-        MRSeriesTest mrsTest = new MRSeriesTest();
-        mrsTest.instance = instance.T0;
-        mrsTest.testGetImageArrayXY();
-        mrsTest.instance = instance.T1;
-        mrsTest.testGetImageArrayXY();
-        mrsTest.instance = instance.T2;
-        mrsTest.testGetImageArrayXY();
-    }
-
-    /**
      * Test of getPixel method, of class BMRStudy.
      */
     @Test

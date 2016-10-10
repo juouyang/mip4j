@@ -13,9 +13,16 @@ import java.awt.Color;
  */
 public enum KineticType {
 
-    GLAND("Glandular", new Color(12, 12, 12)), WASHOUT("Washout", Color.RED), PLATEAU("Plateau", Color.MAGENTA), PERSIST("Persistent", Color.YELLOW), EDEMA("Edema", Color.GREEN), FLUID("Fluid", Color.BLUE), UNMAPPED("Unmapped", null);
+    GLAND("Glandular", new Color(24, 24, 24)),
+    WASHOUT("Washout", Color.RED),
+    PLATEAU("Plateau", Color.MAGENTA),
+    PERSIST("Persistent", new Color(180, 180, 0)),
+    EDEMA("Edema", null),
+    FLUID("Fluid", null),
+    UNMAPPED("Unmapped", null);
+
     private final String description;
-    final Color color;
+    public final Color color;
 
     private KineticType(String s, Color c) {
         description = s;

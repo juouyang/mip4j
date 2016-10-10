@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.BitSet;
 import mip.data.image.mr.MR;
 import mip.util.IOUtils;
-import mip.util.ImageJUtils;
+import mip.util.IJUtils;
 import mip.util.ROIUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.BitImageFrame;
@@ -50,7 +50,7 @@ public class BitImage extends AbstractImage {
     //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
     protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, ImageJUtils.getByteProcessorFromBitImage(this));
+        return new ImagePlus(title, IJUtils.getByteProcessorFromBitImage(this));
     }
 
     public void setPixel(int x, int y, boolean v) {
