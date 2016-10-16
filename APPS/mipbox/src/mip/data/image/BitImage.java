@@ -5,7 +5,7 @@ import ij.gui.Roi;
 import java.io.IOException;
 import java.util.BitSet;
 import mip.data.image.mr.MR;
-import mip.util.IOUtils;
+import mip.data.image.mr.MROpener;
 import mip.util.IJUtils;
 import mip.util.ROIUtils;
 import mip.view.swing.AbstractImagePanel;
@@ -13,15 +13,29 @@ import mip.view.swing.BitImageFrame;
 
 public class BitImage extends AbstractImage {
 
-    BitSet pixelArray;
-
-    public BitImage() {
-        pixelArray = new BitSet(1);
+    public static void main(String[] args) throws IOException {
+        MR mr = MROpener.openMR();
+        BitImage bi = new BitImage(mr.width, mr.height);
+        int i = 0;
+        for (short s : mr.pixelArray) {
+            int x = i % bi.width;
+            int y = i / bi.width;
+            bi.setPixel(x, y, s > 1500);
+            i++;
+        }
+        bi.show();
+        {
+            ImagePlus imp = mr.toImagePlus("");
+            imp.setRoi(bi.getRoi());
+            imp.show();
+            IJUtils.exitWhenNoWindow(imp.getWindow());
+        }
     }
 
+    private final BitSet pixelArray;
+
     public BitImage(int width, int height) {
-        this.width = width;
-        this.height = height;
+        super(width, height);
         pixelArray = new BitSet(width * height);
     }
 
@@ -30,27 +44,9 @@ public class BitImage extends AbstractImage {
         new BitImageFrame(this).setVisible(true);
     }
 
-    public static void main(String[] args) throws IOException {
-        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
-        BitImage bi = new BitImage(mr.width, mr.height);
-
-        int i = 0;
-        for (short s : mr.pixelArray) {
-            bi.pixelArray.set(i++, s > 1500);
-        }
-
-        bi.show();
-        bi.getImagePlus("").show();
-
-        ImagePlus mrips = mr.getImagePlus("mr");
-        mrips.setRoi(bi.getRoi());
-        mrips.show();
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
-    protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, IJUtils.getByteProcessorFromBitImage(this));
+    protected ImagePlus toImagePlus(String title) {
+        return new ImagePlus(title, IJUtils.toByteProcessor(this));
     }
 
     public void setPixel(int x, int y, boolean v) {
@@ -69,11 +65,10 @@ public class BitImage extends AbstractImage {
     public Roi getRoi() {
         for (int i = 0; i < pixelArray.length(); i++) {
             if (pixelArray.get(i)) {
-                return ROIUtils.createSelectionFromThreshold(getImagePlus("").getProcessor(), 255, 255);
+                return ROIUtils.createSelectionFromThreshold(IJUtils.toByteProcessor(this), 255, 255);
             }
         }
         return null;
     }
-    //</editor-fold>
 
 }

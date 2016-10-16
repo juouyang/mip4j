@@ -1,33 +1,37 @@
 package mip.data.image;
 
 import ij.ImagePlus;
+import java.io.File;
+import mip.data.image.mr.BMRStudy;
 import mip.data.image.mr.MR;
-import mip.util.IOUtils;
+import mip.data.image.mr.MROpener;
 import mip.util.IJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ShortImageFrame;
 
 public class ShortImage extends AbstractImage {
 
-    protected short[] pixelArray;
+    public static void main(String[] args) throws Throwable {
+        File f = new File(BMRStudy.SBMR + "2/080.dcm");
+        MR mr = MROpener.openMR(f.toPath());
+        mr.show();
+        ShortImage si = new ShortImage(512, 512, new short[512 * 512]);
+        for (int y = 0; y < si.getHeight(); y++) {
+            for (int x = 0; x < si.getWidth(); x++) {
+                si.setPixel(x, y, 4000 - mr.getPixel(x, y));
+            }
+        }
+        si.show();
+    }
+
+    protected final short[] pixelArray;
     protected short max = Short.MIN_VALUE;
     protected short min = Short.MAX_VALUE;
     protected int windowCenter = Integer.MIN_VALUE;
     protected int windowWidth = Integer.MIN_VALUE;
 
-    protected ShortImage() {
-        pixelArray = new short[1];
-    }
-
-    protected ShortImage(int w, int h) {
-        width = w;
-        height = h;
-        pixelArray = new short[w * h];
-    }
-
     public ShortImage(int w, int h, short[] pixels) {
-        width = w;
-        height = h;
+        super(w, h);
         pixelArray = pixels;
     }
 
@@ -36,23 +40,9 @@ public class ShortImage extends AbstractImage {
         new ShortImageFrame(this).setVisible(true);
     }
 
-    public static void main(String[] args) throws Throwable {
-        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
-        mr.show();
-        ShortImage si = new ShortImage(512, 512);
-        for (int y = 0; y < si.getHeight(); y++) {
-            for (int x = 0; x < si.getWidth(); x++) {
-                si.setPixel(x, y, 4000 - mr.getPixel(x, y));
-            }
-        }
-        si.show();
-        si.getImagePlus("").show();
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
-    protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, IJUtils.getProcessorFromShortImage(this));
+    protected ImagePlus toImagePlus(String title) {
+        return new ImagePlus(title, IJUtils.toShortProcessor(this));
     }
 
     protected void setPixel(int x, int y, int v) {
@@ -114,6 +104,5 @@ public class ShortImage extends AbstractImage {
         }
         return windowWidth;
     }
-    //</editor-fold>
 
 }

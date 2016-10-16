@@ -2,7 +2,6 @@ package bmr.run;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import mip.data.image.mr.BMRStudy;
 import mip.data.image.mr.Kinetic;
 
@@ -22,11 +21,8 @@ public class SingleMR {
         if (args.length == 1) {
             studyRoot = new File(args[0]);
         } else {
-            ClassLoader cl = mip.data.image.mr.Kinetic.class.getClassLoader();
-            URL url = cl.getResource("resources/bmr/");
-            studyRoot = new File(url.getFile());
-//            final String dir = "/home/ju/workspace/_BREAST_MRI/SMHT/717/";
-//            studyRoot = new File(dir);
+            studyRoot = new File(BMRStudy.SBMR);
+            //studyRoot = new File("/home/ju/workspace/_BREAST_MRI/SMHT/717/");
         }
         final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
         k.show(k.colorMapping(null));

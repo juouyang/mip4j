@@ -6,12 +6,10 @@ import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
 import ij.ImagePlus;
 import ij.process.ColorProcessor;
-
 import java.awt.Color;
 import java.io.IOException;
-import mip.data.Component;
 import mip.data.image.mr.MR;
-import mip.util.IOUtils;
+import mip.data.image.mr.MROpener;
 import mip.view.swing.ConnectedComponentFrame;
 
 /**
@@ -20,14 +18,27 @@ import mip.view.swing.ConnectedComponentFrame;
  */
 public class ConnectedComponent extends AbstractImage {
 
+    public static void main(String[] args) throws IOException {
+        MR mr = MROpener.openMR();
+        BitImage bi = new BitImage(mr.width, mr.height);
+        int i = 0;
+        for (short s : mr.pixelArray) {
+            int x = i % bi.width;
+            int y = i / bi.width;
+            bi.setPixel(x, y, s > 1200);
+            i++;
+        }
+        ConnectedComponent cc = new ConnectedComponent(bi);
+        cc.show();
+    }
+
     private ColorImage ci;
-    private long[] pixelArray = new long[1];
+    private final long[] pixelArray;
     private TLongObjectMap<Component> componentHashTable;
     private Component background;
 
     public ConnectedComponent(BitImage bi) {
-        width = bi.getWidth();
-        height = bi.getHeight();
+        super(bi.width, bi.height);
         pixelArray = new long[width * height];
 
         connectedComponentLabeling(bi);
@@ -57,23 +68,8 @@ public class ConnectedComponent extends AbstractImage {
         new ConnectedComponentFrame(this).setVisible(true);
     }
 
-    public static void main(String[] args) throws IOException {
-        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
-        BitImage bi = new BitImage(mr.width, mr.height);
-
-        int i = 0;
-        for (short s : mr.pixelArray) {
-            bi.pixelArray.set(i++, s > 1200);
-        }
-
-        ConnectedComponent cc = new ConnectedComponent(bi);
-        cc.show();
-        cc.getImagePlus("").show();
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
-    protected ImagePlus convertImageToImagePlus(String title) {
+    protected ImagePlus toImagePlus(String title) {
         ColorProcessor ip = new ColorProcessor(width, height);
 
         for (int y = 0; y < height; y++) {
@@ -88,8 +84,9 @@ public class ConnectedComponent extends AbstractImage {
                 int g = c.getColor().getGreen();
                 int b = c.getColor().getBlue();
 
-                int rgb = ((r << 16) & 0x00FF0000) | ((g << 8) & 0x0000FF00) | (b
-                        & 0x000000FF);
+                int rgb = ((r << 16) & 0x00FF0000)
+                        | ((g << 8) & 0x0000FF00)
+                        | (b & 0x000000FF);
 
                 ip.putPixel(x, y, rgb);
             }
@@ -104,10 +101,6 @@ public class ConnectedComponent extends AbstractImage {
 
     public long getPixel(int x, int y) {
         return pixelArray[(y * width) + x];
-    }
-
-    public long[] getPixelArray() {
-        return pixelArray;
     }
 
     public TLongObjectMap<Component> getComponentTable() {
@@ -125,9 +118,8 @@ public class ConnectedComponent extends AbstractImage {
     private void setBackgroundComponent(Component background) {
         this.background = background;
     }
-    //</editor-fold>
 
-    private boolean validCoordinate(int x, int y) {
+    private boolean validPoint(int x, int y) {
         return (x >= 0) && (x < width) && (y >= 0) && (y < height);
     }
 
@@ -155,99 +147,99 @@ public class ConnectedComponent extends AbstractImage {
                         int count = 0;
 
                         while (!(stack.size() == 0)) {
-                            int currentIndex = stack.pop();
-                            int currentX = currentIndex % width;
-                            int currentY = currentIndex / width;
+                            int curIdx = stack.pop();
+                            int curX = curIdx % width;
+                            int curY = curIdx / width;
 
-                            pixelArray[(currentY * width) + currentX] = c.getID();
+                            pixelArray[(curY * width) + curX] = c.getID();
                             count++;
 
-                            if (currentX < c.getMinX()) {
-                                c.setMinX(currentX);
+                            if (curX < c.getMinX()) {
+                                c.setMinX(curX);
                             }
 
-                            if (currentX > c.getMaxX()) {
-                                c.setMaxX(currentX);
+                            if (curX > c.getMaxX()) {
+                                c.setMaxX(curX);
                             }
 
-                            if (currentY < c.getMinY()) {
-                                c.setMinY(currentY);
+                            if (curY < c.getMinY()) {
+                                c.setMinY(curY);
                             }
 
-                            if (currentY > c.getMaxY()) {
-                                c.setMaxY(currentY);
+                            if (curY > c.getMaxY()) {
+                                c.setMaxY(curY);
                             }
 
                             // up
                             try {
-                                int newX = currentX;
-                                int newY = currentY - 1;
-                                int newIndex = (newY * width) + newX;
+                                int newX = curX;
+                                int newY = curY - 1;
+                                int newIdx = (newY * width) + newX;
 
-                                if (validCoordinate(newX, newY) && !visited[newIndex]) {
-                                    visited[newIndex] = true;
+                                if (validPoint(newX, newY) && !visited[newIdx]) {
+                                    visited[newIdx] = true;
 
                                     if (bi.getPixel(newX, newY)) {
-                                        stack.push(newIndex);
+                                        stack.push(newIdx);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
                                     }
                                 }
-                            } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
+                            } catch (ArrayIndexOutOfBoundsException ignore) {
                             }
 
                             // down
                             try {
-                                int newX = currentX;
-                                int newY = currentY + 1;
-                                int newIndex = (newY * width) + newX;
+                                int newX = curX;
+                                int newY = curY + 1;
+                                int newIdx = (newY * width) + newX;
 
-                                if (validCoordinate(newX, newY) && !visited[newIndex]) {
-                                    visited[newIndex] = true;
+                                if (validPoint(newX, newY) && !visited[newIdx]) {
+                                    visited[newIdx] = true;
 
                                     if (bi.getPixel(newX, newY)) {
-                                        stack.push(newIndex);
+                                        stack.push(newIdx);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
                                     }
                                 }
-                            } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
+                            } catch (ArrayIndexOutOfBoundsException ignore) {
                             }
 
                             // left
                             try {
-                                int newX = currentX - 1;
-                                int newY = currentY;
-                                int newIndex = (newY * width) + newX;
+                                int newX = curX - 1;
+                                int newY = curY;
+                                int newIdx = (newY * width) + newX;
 
-                                if (validCoordinate(newX, newY) && !visited[newIndex]) {
-                                    visited[newIndex] = true;
+                                if (validPoint(newX, newY) && !visited[newIdx]) {
+                                    visited[newIdx] = true;
 
                                     if (bi.getPixel(newX, newY)) {
-                                        stack.push(newIndex);
+                                        stack.push(newIdx);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
                                     }
                                 }
-                            } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
+                            } catch (ArrayIndexOutOfBoundsException ignore) {
                             }
 
                             // right
                             try {
-                                int newX = currentX + 1;
-                                int newY = currentY;
-                                int newIndex = (newY * width) + newX;
+                                int newX = curX + 1;
+                                int newY = curY;
+                                int newIdx = (newY * width) + newX;
 
-                                if (validCoordinate(newX, newY) && !visited[newIndex]) {
-                                    visited[newIndex] = true;
+                                if (validPoint(newX, newY) && !visited[newIdx]) {
+                                    visited[newIdx] = true;
 
                                     if (bi.getPixel(newX, newY)) {
-                                        stack.push(newIndex);
+                                        stack.push(newIdx);
                                     } else {
                                         pixelArray[(y * width) + x] = bg.getID();
                                     }
                                 }
-                            } catch (ArrayIndexOutOfBoundsException ignore) { // ignore
+                            } catch (ArrayIndexOutOfBoundsException ignore) {
                             }
                         } // stack empty
 

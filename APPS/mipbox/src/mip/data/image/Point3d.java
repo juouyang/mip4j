@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package mip.data;
+package mip.data.image;
 
 /**
  *
@@ -11,11 +11,11 @@ package mip.data;
  */
 public class Point3d {
 
-    public int x, y, z;
+    public int X, Y, Z;
 
     public Point3d(int x, int y, int z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        X = x;
+        Y = y;
+        Z = z;
     }
 }

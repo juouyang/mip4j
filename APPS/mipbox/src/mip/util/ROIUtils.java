@@ -15,7 +15,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import mip.data.image.BitVolume;
@@ -23,7 +22,6 @@ import mip.data.image.BitVolume;
 public class ROIUtils {
 
     private static final RoiManager SAVER = new RoiManager(true);
-    private static final Logger LOG = Logger.getLogger(ROIUtils.class.getName());
 
     public static void showROI(String zipFile) {
         RoiManager rm = RoiManager.getInstance();
@@ -129,7 +127,7 @@ public class ROIUtils {
         int width = ip.getWidth();
         int height = ip.getHeight();
         boolean[] prevRow, thisRow;
-        ArrayList polygons = new ArrayList();
+        ArrayList<Polygon> polygons = new ArrayList<>(100);
         Outline[] outline;
         int progressInc = Math.max(height / 50, 1);
 

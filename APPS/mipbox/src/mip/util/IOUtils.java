@@ -4,9 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import static java.nio.file.FileVisitResult.CONTINUE;
-
 import java.nio.file.FileVisitResult;
+import static java.nio.file.FileVisitResult.CONTINUE;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,9 +14,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
 public class IOUtils {
-
-    private IOUtils() { // singleton
-    }
 
     public static ArrayList<Path> listFiles(String dir) {
         return new FileVisitor(dir).getFiles();
@@ -43,47 +39,50 @@ public class IOUtils {
 
         return file;
     }
-}
 
-class FileVisitor {
-
-    private final String srcRoot;
-    ArrayList<Path> files;
-
-    public FileVisitor(String root) {
-        srcRoot = root;
-        files = new ArrayList<>();
+    private IOUtils() { // singleton
     }
 
-    private void walkFiles() {
-        try {
-            Files.walkFileTree(Paths.get(srcRoot), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (file.getFileName() != null) {
-                        files.add(file);
-                    }
-                    return CONTINUE;
-                }
+    private static class FileVisitor {
 
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException e) {
-                    //System.err.printf("Visiting failed for %s\n", file);
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
+        private final String srcRoot;
+        private final ArrayList<Path> files;
 
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    //System.out.printf("About to visit directory %s\n", dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (Throwable ignore) {
+        FileVisitor(String root) {
+            srcRoot = root;
+            files = new ArrayList<>(10);
         }
-    }
 
-    public ArrayList<Path> getFiles() {
-        walkFiles();
-        return files;
+        private void walkFiles() {
+            try {
+                Files.walkFileTree(Paths.get(srcRoot), new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                        if (file.getFileName() != null) {
+                            files.add(file);
+                        }
+                        return CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException e) {
+                        //System.err.printf("Visiting failed for %s\n", file);
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                        //System.out.printf("About to visit directory %s\n", dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException ignore) {
+            }
+        }
+
+        public ArrayList<Path> getFiles() {
+            walkFiles();
+            return files;
+        }
     }
 }

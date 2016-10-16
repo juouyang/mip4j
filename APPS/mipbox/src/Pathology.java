@@ -19,8 +19,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import mip.data.image.mr.BMRStudy;
-import mip.data.image.mr.KineticOld;
-import static mip.util.DebugUtils.DBG;
+import mip.data.image.mr.Kinetic;
+import static mip.util.DGBUtils.DBG;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,7 +57,6 @@ public class Pathology {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
         Map<String, TreeSet<BMR>> bmrList = new TreeMap<>();
-        //<editor-fold defaultstate="collapsed" desc="Breast MRI">
         try (BufferedReader in = new BufferedReader(new FileReader(DATA_ROOT + "pList.txt"))) {
             int summaryBMRCount = 0;
             while (true) {
@@ -67,7 +66,6 @@ public class Pathology {
                 }
                 summaryBMRCount++;
 
-                //<editor-fold defaultstate="collapsed" desc="Construct BMR">
                 String[] tokens = line.split("\t");
                 assert (tokens.length == 4);
                 BMR bmr = new BMR();
@@ -79,18 +77,15 @@ public class Pathology {
                     bmrList.put(bmr.patientID, new TreeSet<>());
                 }
                 bmrList.get(bmr.patientID).add(bmr);
-                //</editor-fold>
+
             }
 
-            //<editor-fold defaultstate="collapsed" desc="Summary">
             DBG.accept(summaryBMRCount + " MR studies are processed.\n");
-            //</editor-fold>
+
         }
-        //</editor-fold>
 
         TreeMap<String, Pathology> pathologyList = new TreeMap<>();
         Set<BMR> bmrHasDiagnosisSet = new TreeSet<>();
-        //<editor-fold defaultstate="collapsed" desc="Pathology">
         try (BufferedReader in = new BufferedReader(new FileReader(DATA_ROOT + "ALL_DATA"))) {
             while (true) {
                 String line = in.readLine();
@@ -98,15 +93,12 @@ public class Pathology {
                     break;
                 }
 
-                //<editor-fold defaultstate="collapsed" desc="Decode Base64 Text">
                 String[] tokens = line.split("\t");
                 String pid = tokens[0];
                 String encodedText = tokens[1];
                 String decodeText = new String(DECODER.decode(encodedText), "UTF-8").replace("\r", "");
                 String[] lines = decodeText.split("\n");
-                //</editor-fold>
 
-                //<editor-fold defaultstate="collapsed" desc="Parse a Pathology">
                 String patientName = "";
                 String pathologyID = "";
                 LocalDate biopsyDate = LocalDate.MIN;
@@ -192,9 +184,7 @@ public class Pathology {
                         immunoSearchWindowSizeinLine--;
                     }
                 }
-                //</editor-fold>
 
-                //<editor-fold defaultstate="collapsed" desc="Construct Pathology">
                 biopsyDate = biopsyDate.equals(DEFAULT_DATE) ? (!receiveDate.equals(DEFAULT_DATE) ? receiveDate : DEFAULT_DATE) : biopsyDate;
                 diagnosisText = StringUtils.replace(StringUtils.replace(diagnosisText, "\"", "'").trim(), "病理診斷：", "");
 
@@ -339,10 +329,9 @@ public class Pathology {
                         bmrHasDiagnosisSet.add(bmr);
                     }
                 } // for each diagnosis
-                //</editor-fold>
+
             }
 
-            //<editor-fold defaultstate="collapsed" desc="Merge diagnoses">]
             for (BMR bmr : bmrHasDiagnosisSet) {
                 if (bmr.leftDiagnosisList.size() > 1) {
                     Diagnosis keepMalignant = null;
@@ -389,9 +378,7 @@ public class Pathology {
                 }
             }
 
-            //</editor-fold>
             // 
-            //<editor-fold defaultstate="collapsed" desc="Summary">
             {
                 int summaryLeftCount = 0;
                 int summaryRightCount = 0;
@@ -477,10 +464,8 @@ public class Pathology {
                 }
                 FileUtils.writeStringToFile(new File(DATA_ROOT + "MR_SINGLE_DIAGNOSIS.csv"), mrOneSideSingleDiagnosis.toString());
             }
-            //</editor-fold>
 
         } // close file
-        //</editor-fold>
 
         int diagnosesCount = 0;
         int diagnosesMergedCount = 0;
@@ -524,13 +509,12 @@ public class Pathology {
             assert (p.toFile().exists());
 
             DBG.accept(p.toString() + "\n");
-            KineticOld k = new KineticOld(new BMRStudy(p));
+            Kinetic k = new Kinetic(new BMRStudy(p));
             DBG.accept(k + "\n--\n");
             break;
         }
     }
 
-    //<editor-fold defaultstate="collapsed" desc="toString">
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -578,9 +562,7 @@ public class Pathology {
         sb.append("\n");
         return sb.toString();
     }
-    //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="enum">
     public enum Location {
 
         UNKNOWN("unknown", null), SKIN("skin", new String[]{"skin"}), LN("lymph node", new String[]{"lymph node"}), BREAST("breast", new String[]{"breast", "nipple"});
@@ -664,7 +646,6 @@ public class Pathology {
             return this.description;
         }
     }
-    //</editor-fold>
 
     private static class BMR implements Comparable<BMR> {
 

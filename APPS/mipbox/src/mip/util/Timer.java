@@ -1,23 +1,11 @@
 package mip.util;
 
 import java.util.concurrent.ConcurrentHashMap;
-import static mip.util.DebugUtils.DBG;
+import static mip.util.DGBUtils.DBG;
 
 public class Timer {
 
-    private static final ConcurrentHashMap<Integer, Long> startTimeTable = new ConcurrentHashMap<>();
-
-    public Timer() {
-        startTimeTable.put(hashCode(), System.nanoTime());
-    }
-
-    public void printElapsedTime(String tag) {
-        DBG.accept("[" + tag + "]\t" + format(getElapsedTime()) + "\n");
-    }
-
-    private double getElapsedTime() {
-        return (System.nanoTime() - startTimeTable.get(hashCode())) / 1000000.0;
-    }
+    private static final ConcurrentHashMap<Integer, Long> TIME_MAP = new ConcurrentHashMap<>(10);
 
     private static String format(double ms) {
         String ret;
@@ -34,4 +22,17 @@ public class Timer {
 
         return ret;
     }
+
+    public Timer() {
+        TIME_MAP.put(hashCode(), System.nanoTime());
+    }
+
+    public void printElapsedTime(String tag) {
+        DBG.accept("[" + tag + "]\t" + format(getElapsedTime()) + "\n");
+    }
+
+    private double getElapsedTime() {
+        return (System.nanoTime() - TIME_MAP.get(hashCode())) / 1000000.0;
+    }
+
 }

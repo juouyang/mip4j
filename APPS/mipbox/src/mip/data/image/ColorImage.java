@@ -3,32 +3,28 @@ package mip.data.image;
 import ij.ImagePlus;
 import java.awt.Color;
 import java.io.IOException;
-import mip.data.Component;
 import mip.data.image.mr.MR;
-import mip.util.IOUtils;
+import mip.data.image.mr.MROpener;
 import mip.util.IJUtils;
 import mip.view.swing.AbstractImagePanel;
 import mip.view.swing.ColorImageFrame;
 
 public class ColorImage extends AbstractImage {
 
-    public static class RGB {
-
-        public short R;
-        public short G;
-        public short B;
-
-        @Override
-        public String toString() {
-            return String.format("(%04d,%04d,%04d)", R, G, B);
+    public static void main(String[] args) throws IOException {
+        MR mr = MROpener.openMR();
+        ColorImage ci = new ColorImage(512, 512);
+        int i = 0;
+        for (Short s : mr.pixelArray) {
+            ci.pixelArray[i++].G = (short) ((s > 1500) ? 255 : 0);
         }
+        ci.show();
     }
 
-    RGB[] pixelArray = new RGB[1];
+    private final RGB[] pixelArray;
 
     public ColorImage(int width, int height) {
-        this.width = width;
-        this.height = height;
+        super(width, height);
         pixelArray = new RGB[width * height];
 
         for (int i = 0; i < pixelArray.length; i++) {
@@ -37,8 +33,7 @@ public class ColorImage extends AbstractImage {
     }
 
     public ColorImage(int width, int height, RGB[] pixels) {
-        this.width = width;
-        this.height = height;
+        super(width, height);
         pixelArray = pixels;
     }
 
@@ -47,21 +42,9 @@ public class ColorImage extends AbstractImage {
         new ColorImageFrame(this).setVisible(true);
     }
 
-    public static void main(String[] args) throws IOException {
-        MR mr = new MR(IOUtils.getFileFromResources("resources/bmr/2/080.dcm").toPath());
-        ColorImage ci = new ColorImage(512, 512);
-        int i = 0;
-        for (Short s : mr.pixelArray) {
-            ci.pixelArray[i++].G = (short) ((s > 1500) ? 255 : 0);
-        }
-        ci.show();
-        ci.getImagePlus("").show();
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     @Override
-    protected ImagePlus convertImageToImagePlus(String title) {
-        return new ImagePlus(title, IJUtils.getColorProcessorFromColorImage(this));
+    protected ImagePlus toImagePlus(String title) {
+        return new ImagePlus(title, IJUtils.toColorProcessor(this));
     }
 
     public void setPixel(int x, int y, int r, int g, int b) {
@@ -88,6 +71,5 @@ public class ColorImage extends AbstractImage {
         token.hashCode();
         return pixelArray;
     }
-    //</editor-fold>
 
 }

@@ -6,9 +6,9 @@
 package mip.data.image;
 
 import ij.ImagePlus;
-import java.io.File;
 import java.io.IOException;
 import mip.data.image.mr.MR;
+import mip.data.image.mr.MROpener;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -22,11 +22,6 @@ import org.junit.Test;
  */
 public class ShortImageTest {
 
-    MR instance;
-
-    public ShortImageTest() {
-    }
-
     @BeforeClass
     public static void setUpClass() {
     }
@@ -35,10 +30,14 @@ public class ShortImageTest {
     public static void tearDownClass() {
     }
 
+    private MR instance;
+
+    public ShortImageTest() {
+    }
+
     @Before
     public void setUp() throws IOException {
-        File f = new File(getClass().getClassLoader().getResource("resources/bmr/1/001.dcm").getFile());
-        instance = new MR(f.toPath());
+        instance = MROpener.openMR();
     }
 
     @After
@@ -65,7 +64,7 @@ public class ShortImageTest {
     public void testGetPixel() {
         int x = 0;
         int y = 0;
-        short expResult = 15;
+        short expResult = 176;
         short result = instance.getPixel(x, y);
         assertEquals(expResult, result);
     }
@@ -75,7 +74,7 @@ public class ShortImageTest {
      */
     @Test
     public void testGetMax() {
-        short expResult = 917;
+        short expResult = 4517;
         short result = instance.getMax();
         assertEquals(expResult, result);
     }
@@ -95,7 +94,7 @@ public class ShortImageTest {
      */
     @Test
     public void testGetWindowCenter() {
-        int expResult = 365;
+        int expResult = 1946;
         int result = instance.getWindowCenter();
         assertEquals(expResult, result);
     }
@@ -105,7 +104,7 @@ public class ShortImageTest {
      */
     @Test
     public void testGetWindowWidth() {
-        int expResult = 695;
+        int expResult = 3697;
         int result = instance.getWindowWidth();
         assertEquals(expResult, result);
     }
@@ -115,10 +114,9 @@ public class ShortImageTest {
      */
     @Test
     public void testToImagePlus() {
-        String title = "";
-        ImagePlus result = instance.getImagePlus(title);
-        assertEquals((int) result.getProcessor().getMin(), instance.getMin());
-        assertEquals((int) result.getProcessor().getMax(), instance.getMax());
+        ImagePlus imp = instance.toImagePlus("");
+        assertEquals((long) imp.getProcessor().getMin(), instance.getMin());
+        assertEquals((long) imp.getProcessor().getMax(), instance.getMax());
     }
 
     /**

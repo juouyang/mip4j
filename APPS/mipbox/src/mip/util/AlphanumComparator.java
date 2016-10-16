@@ -50,7 +50,7 @@ public class AlphanumComparator implements Comparator<Path> {
      * calculate it once) *
      */
     private static String getChunk(String s, int slength, int marker) {
-        StringBuilder chunk = new StringBuilder();
+        StringBuilder chunk = new StringBuilder(slength);
         char c = s.charAt(marker);
         chunk.append(c);
         marker++;

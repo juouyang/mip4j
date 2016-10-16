@@ -1,14 +1,23 @@
 package mip.data.image.mr;
 
 import java.io.File;
-import java.util.ArrayList;
-import mip.util.IOUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import static mip.util.DebugUtils.DBG;
+import java.util.ArrayList;
+import static mip.util.DGBUtils.DBG;
+import mip.util.IOUtils;
 import mip.util.Timer;
 
 public class BMRStudy {
+
+    public static final String SBMR = "sample_bmr/";
+
+    public static void main(String[] args) {
+        File studyRoot = new File(BMRStudy.SBMR);
+        BMRStudy mrs = new BMRStudy(studyRoot.toPath());
+        mrs.getPatientID();
+        mrs.getStudyID();
+    }
 
     private final String patientID;
     private final String studyID;
@@ -30,14 +39,6 @@ public class BMRStudy {
         t.printElapsedTime("BMRStudy");
     }
 
-    public static void main(String[] args) {
-        File studyRoot = new File(BMRStudy.class.getClassLoader().getResource("resources/bmr/").getFile());
-        BMRStudy mrs = new BMRStudy(studyRoot.toPath());
-        DBG.accept(mrs.getStudyID() + "\n");
-        DBG.accept(mrs.getPatientID() + "\n");
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public String getPatientID() {
         return patientID;
     }
@@ -62,10 +63,9 @@ public class BMRStudy {
     public String getStudyRoot() {
         return studyRoot;
     }
-    //</editor-fold>
 
     private MRSeries[] read_dicom_files(Path studyRoot) {
-        DBG.accept(studyRoot + "\n");
+        DBG.accept(studyRoot.toAbsolutePath() + "\n");
         final Path p2 = studyRoot.resolve("2");
         final Path p3 = studyRoot.resolve("3");
         final Path p4 = studyRoot.resolve("4");
@@ -73,13 +73,13 @@ public class BMRStudy {
             throw new IllegalArgumentException("Missing series");
         }
 
-        ArrayList<Path> t0 = new ArrayList<>();
+        ArrayList<Path> t0 = new ArrayList<>(250);
         ArrayList<Path> t1;
         ArrayList<Path> t2;
-        ArrayList<Path> s3 = new ArrayList<>();
-        ArrayList<Path> s4 = new ArrayList<>();
-        ArrayList<Path> s5 = new ArrayList<>();
-        ArrayList<Path> s6 = new ArrayList<>();
+        ArrayList<Path> s3 = new ArrayList<>(250);
+        ArrayList<Path> s4 = new ArrayList<>(250);
+        ArrayList<Path> s5 = new ArrayList<>(250);
+        ArrayList<Path> s6 = new ArrayList<>(250);
 
         for (Path fn : IOUtils.listFiles(studyRoot.toString())) {
             if (fn.getParent().endsWith("2")) {
@@ -108,12 +108,14 @@ public class BMRStudy {
         } else if (s4.size() == t0.size() && s5.size() == t0.size()) {
             t1 = s4;
             t2 = s5;
-        } else if (s3.size() == s4.size() && s4.size() == s5.size() && s3.size() != t0.size()) {
+        } else if (s3.size() == s4.size()
+                && s4.size() == s5.size()
+                && s3.size() != t0.size()) {
             t0 = s4;
             t1 = s5;
             t2 = s6;
         } else {
-            throw new IllegalArgumentException("Unmatched frame-count of series " + studyRoot);
+            throw new IllegalArgumentException("ambiguous sereis:" + studyRoot);
         }
 
         MRSeries[] ret = new MRSeries[3];

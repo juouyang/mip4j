@@ -6,24 +6,18 @@
 package mip.data.image.mr;
 
 import java.io.File;
-import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  * @author ju
  */
 public class BMRStudyTest {
-
-    BMRStudy instance;
-
-    public BMRStudyTest() {
-    }
 
     @BeforeClass
     public static void setUpClass() {
@@ -32,10 +26,14 @@ public class BMRStudyTest {
     @AfterClass
     public static void tearDownClass() {
     }
+    private BMRStudy instance;
+
+    public BMRStudyTest() {
+    }
 
     @Before
     public void setUp() {
-        File studyRoot = new File(getClass().getClassLoader().getResource("resources/bmr/").getFile());
+        File studyRoot = new File(BMRStudy.SBMR);
         instance = new BMRStudy(studyRoot.toPath());
     }
 

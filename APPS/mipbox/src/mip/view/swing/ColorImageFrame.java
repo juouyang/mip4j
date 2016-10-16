@@ -11,9 +11,9 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import javax.swing.JFrame;
-import mip.data.Component;
 import mip.data.image.ColorImage;
-import mip.data.image.ColorImage.RGB;
+import mip.data.image.Component;
+import mip.data.image.RGB;
 import static mip.view.swing.AbstractImagePanel.TOKEN;
 
 /**
@@ -22,7 +22,19 @@ import static mip.view.swing.AbstractImagePanel.TOKEN;
  */
 public class ColorImageFrame extends JFrame {
 
-    ColorImagePanel imgPanel = null;
+    private static final long serialVersionUID = 1L;
+
+    public static void main(String args[]) throws InterruptedException {
+        ColorImage ci = new ColorImage(512, 512);
+        for (int y = 0; y < ci.getHeight(); y++) {
+            for (int x = 0; x < ci.getWidth(); x++) {
+                ci.setPixel(x, y, Component.getColorFromPalette((x + y) % Component.PALETTESIZE));
+            }
+        }
+        new ColorImageFrame(ci).setVisible(true);
+    }
+
+    protected ColorImagePanel imgPanel = null;
 
     public ColorImageFrame(ColorImage ci) {
         imgPanel = new ColorImagePanel(ci);
@@ -34,12 +46,14 @@ public class ColorImageFrame extends JFrame {
 
     protected static final class ColorImagePanel extends AbstractImagePanel<ColorImage> {
 
-        public ColorImagePanel(ColorImage ci) {
+        private static final long serialVersionUID = 1L;
+
+        ColorImagePanel(ColorImage ci) {
             this();
             setImage(ci);
         }
 
-        public ColorImagePanel() {
+        ColorImagePanel() {
             addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseMoved(MouseEvent e) {
@@ -74,19 +88,12 @@ public class ColorImageFrame extends JFrame {
             int[] data = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
             int i = 0;
             for (RGB v : img.getPixelArray(TOKEN)) {
-                data[i++] = ((v.R << 16) & 0x00FF0000) | ((v.G << 8) & 0x0000FF00) | (v.B & 0x000000FF);
+                data[i++] = ((v.R << 16) & 0x00FF0000)
+                        | ((v.G << 8) & 0x0000FF00)
+                        | (v.B & 0x000000FF);
             }
         }
 
     }
 
-    public static void main(String args[]) throws InterruptedException {
-        ColorImage ci = new ColorImage(512, 512);
-        for (int y = 0; y < ci.getHeight(); y++) {
-            for (int x = 0; x < ci.getWidth(); x++) {
-                ci.setPixel(x, y, Component.getColorFromPalette((x + y) % Component.PALETTESIZE));
-            }
-        }
-        new ColorImageFrame(ci).setVisible(true);
-    }
 }

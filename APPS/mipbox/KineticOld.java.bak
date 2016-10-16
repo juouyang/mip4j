@@ -102,10 +102,10 @@ public class KineticOld {
         fs.saveAsTiffStack(mrStudy.studyRoot + "/cm.tif");
     }
 
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
+    
     private double initGlandular() {
         MR firstMiddleSlice = mrStudy.T0.imageArrayXY[mrStudy.T0.getSize() / 2];
-        ImageStatistics is = new ShortStatistics(IJUtils.getProcessorFromShortImage(firstMiddleSlice));
+        ImageStatistics is = new ShortStatistics(IJUtils.toShortProcessor(firstMiddleSlice));
         // TODO magic number
         int noiseFloor = (int) Math.ceil(is.stdDev * 2.0);
         //double glandularNoiseRatio = (noiseFloor > 1000) ? 1.47 : 1.33;
@@ -271,7 +271,7 @@ public class KineticOld {
         }
         return imp;
     }
-    //</editor-fold>
+    
 
     private void colorMapping(boolean onlyROI) {
         imp = null;
@@ -292,7 +292,7 @@ public class KineticOld {
                 MR t1 = mrStudy.T1.imageArrayXY[i];
                 final int width = t1.getWidth();
                 final int height = t1.getHeight();
-                ByteProcessor bp = NO_BACKGROUND ? null : IJUtils.getByteProcessorFromShortImage(t1, t1.getWindowCenter(), t1.getWindowWidth());
+                ByteProcessor bp = NO_BACKGROUND ? null : IJUtils.toByteProcessor(t1, t1.getWindowCenter(), t1.getWindowWidth());
 
                 assert (bp != null || NO_BACKGROUND);
 

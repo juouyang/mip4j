@@ -9,8 +9,8 @@ import gnu.trove.map.TLongObjectMap;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import mip.data.Component;
 import mip.data.image.BitImage;
+import mip.data.image.Component;
 import mip.data.image.ConnectedComponent;
 
 /**
@@ -19,9 +19,21 @@ import mip.data.image.ConnectedComponent;
  */
 public class ConnectedComponentFrame extends ColorImageFrame {
 
+    private static final long serialVersionUID = 1L;
+
+    public static void main(String[] args) {
+        BitImage bi = new BitImage(512, 512);
+        for (int y = 0; y < 512; y++) {
+            for (int x = 0; x < 512; x++) {
+                bi.setPixel(x, y, (x + y) % 64 > 32);
+            }
+        }
+        new ConnectedComponentFrame(new ConnectedComponent(bi)).setVisible(true);
+    }
+
     public ConnectedComponentFrame(final ConnectedComponent cc) {
         super(cc.getColorImage(false));
-        super.imgPanel.addMouseMotionListener(new MouseMotionAdapter() {
+        imgPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
                 if (imgPanel.img == null) {
@@ -31,7 +43,8 @@ public class ConnectedComponentFrame extends ColorImageFrame {
                 int x = e.getX();
                 int y = e.getY();
 
-                if ((x < 0) || (x >= imgPanel.img.getWidth()) || (y < 0) || (y >= imgPanel.img.getHeight())) {
+                if ((x < 0) || (x >= imgPanel.img.getWidth())
+                        || (y < 0) || (y >= imgPanel.img.getHeight())) {
                     return;
                 }
 
@@ -49,16 +62,6 @@ public class ConnectedComponentFrame extends ColorImageFrame {
                 setTitle(message);
             }
         });
-    }
-
-    public static void main(String[] args) {
-        BitImage bi = new BitImage(512, 512);
-        for (int y = 0; y < 512; y++) {
-            for (int x = 0; x < 512; x++) {
-                bi.setPixel(x, y, (x + y) % 64 > 32);
-            }
-        }
-        new ConnectedComponentFrame(new ConnectedComponent(bi)).setVisible(true);
     }
 
 }

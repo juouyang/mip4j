@@ -12,7 +12,17 @@ import static mip.view.swing.AbstractImagePanel.TOKEN;
 
 public class ShortImageFrame extends JFrame {
 
-    ShortImagePanel imgPanel = null;
+    private static final long serialVersionUID = 1L;
+
+    public static void main(String args[]) throws InterruptedException {
+        short[] pixel = new short[512 * 512];
+        for (int i = 0; i < pixel.length; i++) {
+            pixel[i] = (short) (i % 512);
+        }
+        new ShortImageFrame(new ShortImage(512, 512, pixel)).setVisible(true);
+    }
+
+    private ShortImagePanel imgPanel = null;
 
     public ShortImageFrame(ShortImage si) {
         imgPanel = new ShortImagePanel(si);
@@ -22,7 +32,9 @@ public class ShortImageFrame extends JFrame {
         setResizable(false);
     }
 
-    private static final class ShortImagePanel extends AbstractImagePanel<ShortImage> {
+    private static class ShortImagePanel extends AbstractImagePanel<ShortImage> {
+
+        private static final long serialVersionUID = 1L;
 
         private int preX = 0;
         private int preY = 0;
@@ -31,16 +43,7 @@ public class ShortImageFrame extends JFrame {
         private short pixelMax = Short.MIN_VALUE;
         private short pixelMin = Short.MAX_VALUE;
 
-        @Override
-        public final void setImage(ShortImage si) {
-            winCenter = si.getWindowCenter();
-            winWidth = si.getWindowWidth();
-            pixelMax = si.getMax();
-            pixelMin = si.getMin();
-            super.setImage(si);
-        }
-
-        public ShortImagePanel(ShortImage si) {
+        ShortImagePanel(ShortImage si) {
             this();
             setImage(si);
         }
@@ -80,6 +83,15 @@ public class ShortImageFrame extends JFrame {
                     preY = e.getY();
                 }
             });
+        }
+
+        @Override
+        public final void setImage(ShortImage si) {
+            winCenter = si.getWindowCenter();
+            winWidth = si.getWindowWidth();
+            pixelMax = si.getMax();
+            pixelMin = si.getMin();
+            super.setImage(si);
         }
 
         @Override
@@ -136,11 +148,4 @@ public class ShortImageFrame extends JFrame {
         }
     }
 
-    public static void main(String args[]) throws InterruptedException {
-        short[] pixel = new short[512 * 512];
-        for (int i = 0; i < pixel.length; i++) {
-            pixel[i] = (short) (i % 512);
-        }
-        new ShortImageFrame(new ShortImage(512, 512, pixel)).setVisible(true);
-    }
 }

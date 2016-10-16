@@ -18,11 +18,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.io.File;
-import java.net.URL;
 import java.util.List;
-import mip.data.Point3d;
 import mip.data.image.BitVolume;
-import static mip.util.DebugUtils.DBG;
+import mip.data.image.Point3d;
+import static mip.util.DGBUtils.DBG;
 import mip.util.IJUtils;
 import mip.util.ROIUtils;
 import mip.util.Timer;
@@ -33,26 +32,24 @@ import org.apache.commons.lang3.Range;
  * @author ju
  */
 public class Kinetic {
-    
+
     private static final double STRONG_ENHANCE = 0.32;
     private static final Range<Double> PLATEAU = Range.between(-0.05, 0.05);
-    
+
     public static void main(String args[]) {
-        ClassLoader cl = mip.data.image.mr.Kinetic.class.getClassLoader();
-        URL url = cl.getResource("resources/bmr/");
-        File studyRoot = new File(url.getFile());
+        File studyRoot = new File(BMRStudy.SBMR);
         BMRStudy bmr = new BMRStudy(studyRoot.toPath());
         Kinetic k = new Kinetic(bmr);
         k.show(k.colorMapping(null));
     }
-    
+
     public final BMRStudy bmrStudy;
     public final int width;
     public final int height;
     public final int size;
     public final int glandular;
     public final String roiFile;
-    
+
     public Kinetic(BMRStudy bmr) {
         bmrStudy = bmr;
         width = bmr.T0.getWidth();
@@ -61,43 +58,33 @@ public class Kinetic {
         {
             final MR[] imgs = bmrStudy.T0.imageArrayXY;
             {
-                ImageStack s = IJUtils.getImageStackFromShortImages(imgs);
+                ImageStack s = IJUtils.toImageStack(imgs);
                 StackStatistics ss = new StackStatistics(new ImagePlus("", s));
                 int count = 0;
                 int noiseFloor = 0;
                 for (int i : ss.histogram16) {
                     count += i;
-                    
+
                     double cdf = count / ss.area;
                     if (cdf >= 0.95) {
                         break;
                     }
                     noiseFloor++;
                 }
-                
+
                 double glandularNoiseRatio = noiseFloor > 1000 ? 1.47 : 1.33;
                 glandular = (int) (noiseFloor * glandularNoiseRatio);
                 DBG.accept("glandular = " + glandular);
                 DBG.accept(",\tnoiseFloor = " + noiseFloor + "\n");
             }
-//            {
-//                MR fms = imgs[size / 2];
-//               ImageProcessor p = IJUtils.getProcessorFromShortImage(fms);
-//                ImageStatistics is = new ShortStatistics(p);
-//                int noiseFloor = (int) Math.ceil(is.stdDev * 2.0);
-//                double glandularNoiseRatio = noiseFloor > 1000 ? 1.47 : 1.33;
-//                int gland = (int) (glandularNoiseRatio * noiseFloor);
-//                DBG.accept("old: glandular = " + gland);
-//                DBG.accept(",\tnoiseFloor = " + noiseFloor + "\n");
-//            }
         }
-        
+
         roiFile = bmrStudy.studyRoot + "//" + bmrStudy.getStudyID() + ".zip";
     }
-    
+
     public ImagePlus colorMapping(BitVolume bv) {
         Timer t = new Timer();
-        
+
         ImageStack ims = new ImageStack(width, height);
         {
             final int[] rgb = new int[3];
@@ -109,15 +96,15 @@ public class Kinetic {
                         int peak = bmrStudy.getPixel(x, y, i, 1);
                         int delay = bmrStudy.getPixel(x, y, i, 2);
                         KineticType kt = mapping(initial, peak, delay);
-                        
+
                         if (kt.color == null) {
                             continue;
                         }
-                        
+
                         if ((bv != null && !bv.getPixel(x, y, i))) {
                             continue;
                         }
-                        
+
                         rgb[0] = kt.color.getRed();
                         rgb[1] = kt.color.getGreen();
                         rgb[2] = kt.color.getBlue();
@@ -127,12 +114,12 @@ public class Kinetic {
                 ims.addSlice(cp);
             }
         }
-        
+
         t.printElapsedTime("colorMapping");
-        
+
         return new ImagePlus("Kinetics", ims);
     }
-    
+
     public String toString(int x, int y, int z) {
         final short i = bmrStudy.getPixel(x, y, z, 0);
         final short p = bmrStudy.getPixel(x, y, z, 1);
@@ -140,15 +127,15 @@ public class Kinetic {
         final String s = mapping(i, p, d).toString();
         return String.format("%3d,%3d,%3d=%4d~%4d~%4d %s", x, y, z, i, p, d, s);
     }
-    
+
     public void show(ImagePlus i) {
         i.show();
         i.setPosition(size / 2);
-        
+
         final ImageWindow iw = i.getWindow();
         IJUtils.exitWhenNoWindow(iw);
         iw.setResizable(false);
-        
+
         final ImageCanvas ic = i.getCanvas();
         ic.addMouseMotionListener(new MouseAdapter() {
             @Override
@@ -198,30 +185,30 @@ public class Kinetic {
                     final int X = ic.getCursorLoc().x;
                     final int Y = ic.getCursorLoc().y;
                     final int Z = i.getCurrentSlice() - 1;
-                    
+
                     Point3d seed = new Point3d(X, Y, Z);
                     BitVolume voi = BitVolume.regionGrowing(Kinetic.this, seed);
                     if (voi != null) {
-                        //voi.render();
                         {
                             List<Roi> rois = voi.getROIs();
                             ROIUtils.saveROIs(rois, roiFile);
                             ROIUtils.showROI(roiFile);
                         }
+                        voi.render();
                     }
                 }
                 super.mouseClicked(me);
             }
         });
     }
-    
+
     public boolean isStrongEnhanced(int x, int y, int z) {
         int initial = bmrStudy.getPixel(x, y, z, 0);
         int peak = bmrStudy.getPixel(x, y, z, 1);
         double R1 = (peak - initial) / (double) initial;
         return initial >= glandular && R1 > STRONG_ENHANCE;
     }
-    
+
     private KineticType mapping(int initial, int peak, int delay) {
         final double R1 = (peak - initial) / (double) initial;
         final double R2 = (delay - initial) / (double) initial - R1;
@@ -239,7 +226,7 @@ public class Kinetic {
                 ret = KineticType.GLAND;
             }
         }
-        
+
         return ret;
     }
 }

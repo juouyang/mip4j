@@ -12,10 +12,10 @@ import java.util.function.Consumer;
  *
  * @author ju
  */
-public class DebugUtils {
+public class DGBUtils {
 
     private static final boolean IS_DEBUG = true;
-    public static final Consumer<String> DBG = DebugUtils::debug;
+    public static final Consumer<String> DBG = DGBUtils::debug;
 
     private static void debug(String s) {
         if (IS_DEBUG == true) {
@@ -28,5 +28,8 @@ public class DebugUtils {
         Scanner input = new Scanner(System.in);
         System.out.print("Press enter to exit....");
         input.hasNextLine();
+    }
+
+    private DGBUtils() {
     }
 }

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package mip.data;
+package mip.data.image;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -15,6 +15,41 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author ju
  */
 public class Component {
+
+    private final static Random RANDOM = new Random(System.currentTimeMillis());
+    public final static int PALETTESIZE = 64;
+    private static Color[] COLORPALETTE = null;
+
+    public static Color getRandomColor() {
+        if (COLORPALETTE == null) {
+            constructColorPalette();
+        }
+
+        return COLORPALETTE[RANDOM.nextInt(PALETTESIZE)];
+    }
+
+    public static Color getColorFromPalette(int index) {
+        if (COLORPALETTE == null) {
+            constructColorPalette();
+        }
+
+        if (index < 0 || index > PALETTESIZE) {
+            throw new IllegalArgumentException();
+        }
+
+        return COLORPALETTE[index];
+    }
+
+    private static void constructColorPalette() {
+        COLORPALETTE = new Color[PALETTESIZE];
+
+        for (int i = 0; i < COLORPALETTE.length; i++) {
+            int r = RANDOM.nextInt(256);
+            int g = RANDOM.nextInt(256);
+            int b = RANDOM.nextInt(256);
+            COLORPALETTE[i] = new Color(r, g, b);
+        }
+    }
 
     private final long id;
     private Color c;
@@ -45,16 +80,15 @@ public class Component {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(24);
 
         int a = getBoundingRectagle().width * getBoundingRectagle().height;
         double ratio = (double) getAreaSize() / a * 100.0;
-        sb.append(String.format("(%05d, %07d, %02.2f]", id, getAreaSize(), ratio));
+        sb.append(String.format("%05d,%07d,%02.2f", id, getAreaSize(), ratio));
 
         return sb.toString();
     }
 
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public int getMaxX() {
         return maxX;
     }
@@ -97,7 +131,12 @@ public class Component {
 
     public Rectangle getBoundingRectagle() {
         if (this.bounding == null) {
-            this.bounding = new Rectangle(this.minX, this.minY, this.maxX - this.minX + 1, this.maxY - this.minY + 1);
+            this.bounding = new Rectangle(
+                    this.minX,
+                    this.minY,
+                    this.maxX - this.minX + 1,
+                    this.maxY - this.minY + 1
+            );
         }
 
         return this.bounding;
@@ -114,56 +153,18 @@ public class Component {
     public long getID() {
         return this.id;
     }
-
-    public static Color getRandomColor() {
-        if (COLORPALETTE == null) {
-            constructColorPalette();
-        }
-
-        return COLORPALETTE[RANDOM.nextInt(PALETTESIZE)];
-    }
-
-    public static Color getColorFromPalette(int index) {
-        if (COLORPALETTE == null) {
-            constructColorPalette();
-        }
-
-        if (index < 0 || index > PALETTESIZE) {
-            throw new IllegalArgumentException();
-        }
-
-        return COLORPALETTE[index];
-    }
-    //</editor-fold>
-
-    private final static Random RANDOM = new Random(System.currentTimeMillis());
-    public final static int PALETTESIZE = 64;
-    private static Color[] COLORPALETTE = null;
-
-    private static void constructColorPalette() {
-        COLORPALETTE = new Color[PALETTESIZE];
-
-        for (int i = 0; i < COLORPALETTE.length; i++) {
-            int r = RANDOM.nextInt(256);
-            int g = RANDOM.nextInt(256);
-            int b = RANDOM.nextInt(256);
-            COLORPALETTE[i] = new Color(r, g, b);
-        }
-    }
 }
 
 class UniqueID {
 
     private static final AtomicLong CURRENT_ID = new AtomicLong(0);
 
-    private UniqueID() {
-        // singleton
-    }
-
-    //<editor-fold defaultstate="collapsed" desc="getters & setters">
     public static long getUniqueID() {
         return CURRENT_ID.getAndIncrement();
     }
-    //</editor-fold>
+
+    private UniqueID() {
+        // singleton
+    }
 
 }

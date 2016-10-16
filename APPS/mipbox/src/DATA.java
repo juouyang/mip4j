@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import static mip.util.DebugUtils.DBG;
+import static mip.util.DGBUtils.DBG;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -85,7 +85,6 @@ public class DATA {
                 String[] lines = decodeText.split("\n");
                 //DBG.accept(pid + "\t" + decodeText + "\n-------------------\n");
 
-                //<editor-fold defaultstate="collapsed" desc="Pathology Report Analyze">
                 // ***********************************************************//
                 // from free Text: decodeText lines
                 // to struct report: pathology
@@ -404,7 +403,7 @@ public class DATA {
                         immunoSearchWindowSizeinLine--;
                     }
                 }
-                //</editor-fold>
+
             }
         }
 

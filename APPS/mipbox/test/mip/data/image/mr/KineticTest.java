@@ -11,18 +11,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  * @author ju
  */
 public class KineticTest {
-
-    Kinetic instance;
-
-    public KineticTest() {
-    }
 
     @BeforeClass
     public static void setUpClass() {
@@ -31,10 +25,14 @@ public class KineticTest {
     @AfterClass
     public static void tearDownClass() {
     }
+    private Kinetic instance;
+
+    public KineticTest() {
+    }
 
     @Before
     public void setUp() {
-        File studyRoot = new File(getClass().getClassLoader().getResource("resources/bmr/").getFile());
+        File studyRoot = new File(BMRStudy.SBMR);
         instance = new Kinetic(new BMRStudy(studyRoot.toPath()));
     }
 

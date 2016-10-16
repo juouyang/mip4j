@@ -16,9 +16,6 @@ import weka.filters.unsupervised.attribute.Remove;
 
 public class WekaUtils {
 
-    private WekaUtils() { // singleton
-    }
-
     public static void saveARFF(Instances is, File f) throws IOException {
         ArffSaver saver = new ArffSaver();
         saver.setInstances(is);
@@ -85,6 +82,9 @@ public class WekaUtils {
         filter.setAttributeIndices("" + (data.classIndex() + 1));
         filter.setInputFormat(data);
         return Filter.useFilter(data, filter);
+    }
+
+    private WekaUtils() { // singleton
     }
 
 }

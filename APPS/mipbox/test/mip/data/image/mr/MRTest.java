@@ -5,25 +5,19 @@
  */
 package mip.data.image.mr;
 
-import java.io.File;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  * @author ju
  */
 public class MRTest {
-
-    MR instance;
-
-    public MRTest() throws IOException {
-    }
 
     @BeforeClass
     public static void setUpClass() {
@@ -33,10 +27,14 @@ public class MRTest {
     public static void tearDownClass() {
     }
 
+    private MR instance;
+
+    public MRTest() throws IOException {
+    }
+
     @Before
     public void setUp() throws IOException {
-        File f = new File(getClass().getClassLoader().getResource("resources/bmr/1/001.dcm").getFile());
-        instance = new MR(f.toPath());
+        instance = MROpener.openMR();
     }
 
     @After
@@ -59,7 +57,7 @@ public class MRTest {
      */
     @Test
     public void testGetSeriesNumber() {
-        String expResult = "1";
+        String expResult = "2";
         String result = instance.getSeriesNumber();
         assertEquals(expResult, result);
     }
@@ -69,7 +67,7 @@ public class MRTest {
      */
     @Test
     public void testGetInstanceNumber() {
-        String expResult = "1";
+        String expResult = "80";
         String result = instance.getInstanceNumber();
         assertEquals(expResult, result);
     }

@@ -6,26 +6,19 @@
 package mip.data.image.mr;
 
 import ij.ImagePlus;
-import java.io.File;
-import java.io.IOException;
-import mip.util.IOUtils;
+import mip.util.IJUtils;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  * @author ju
  */
 public class MRSeriesTest {
-
-    MRSeries instance;
-
-    public MRSeriesTest() {
-    }
 
     @BeforeClass
     public static void setUpClass() {
@@ -34,11 +27,14 @@ public class MRSeriesTest {
     @AfterClass
     public static void tearDownClass() {
     }
+    private MRSeries instance;
+
+    public MRSeriesTest() {
+    }
 
     @Before
     public void setUp() throws InterruptedException {
-        File seriesRoot = new File(getClass().getClassLoader().getResource("resources/bmr/2/").getFile());
-        instance = new MRSeries(IOUtils.listFiles(seriesRoot.getPath()));
+        instance = MROpener.openMRSeries();
     }
 
     @After
@@ -81,8 +77,7 @@ public class MRSeriesTest {
      */
     @Test
     public void testToImagePlus() {
-        String title = "";
-        ImagePlus result = instance.toImagePlus(title);
+        ImagePlus result = new ImagePlus("", IJUtils.toImageStack(instance.imageArrayXY));
         assertEquals(result.getImageStack().getWidth(), instance.getWidth());
         assertEquals(result.getImageStack().getHeight(), instance.getHeight());
         assertEquals(result.getImageStack().getSize(), instance.getSize());
@@ -132,7 +127,7 @@ public class MRSeriesTest {
      */
     @Test
     public void testRender() {
-        instance.render();
+        instance.render(2);
     }
 
 }

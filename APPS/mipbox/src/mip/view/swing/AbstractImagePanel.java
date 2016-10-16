@@ -4,19 +4,13 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import javax.swing.JFrame;
-
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-
 import mip.data.image.AbstractImage;
 
 public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel {
 
-    public static class VIEW_ACCESS_TOKEN {
-
-        private VIEW_ACCESS_TOKEN() {
-        }
-    }
+    private static final long serialVersionUID = 1L;
 
     protected static final VIEW_ACCESS_TOKEN TOKEN = new VIEW_ACCESS_TOKEN();
 
@@ -47,12 +41,9 @@ public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel
     }
 
     public void update() {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                invalidate();
-                repaint();
-            }
+        SwingUtilities.invokeLater(() -> {
+            invalidate();
+            repaint();
         });
     }
 
@@ -78,5 +69,11 @@ public abstract class AbstractImagePanel<T extends AbstractImage> extends JPanel
     protected void setTitle(String s) {
         final JFrame frame = (JFrame) SwingUtilities.getRoot(this);
         frame.setTitle(s);
+    }
+
+    public static class VIEW_ACCESS_TOKEN {
+
+        private VIEW_ACCESS_TOKEN() {
+        }
     }
 }
