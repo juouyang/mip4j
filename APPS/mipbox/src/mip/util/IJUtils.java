@@ -45,7 +45,6 @@ public class IJUtils {
         Image3DUniverse univ = get3DUniv();
         univ.removeAllContents();
         final ImagePlus imp = i.duplicate();
-        new StackConverter(imp).convertToGray8();
 
         ContentInstant ci = univ.addVoltex(imp, resample).getCurrent();
 

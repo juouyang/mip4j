@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import mip.util.AlphanumComparator;
+import mip.util.DCMUtils;
+import static mip.util.DGBUtils.DBG;
 import mip.util.IJUtils;
 import mip.util.IOUtils;
 
@@ -39,6 +41,7 @@ public class MRSeries {
     public final MR[] imageArrayXY;
     private String seriesNumber;
     private final ImagePlus imp;
+    private final ArrayList<Path> dcmFiles;
 
     public final double pixelSpacingX;
     public final double pixelSpacingY;
@@ -46,6 +49,7 @@ public class MRSeries {
     public final boolean isCompressed;
 
     public MRSeries(final ArrayList<Path> dcmFiles) throws InterruptedException {
+        this.dcmFiles = dcmFiles;
         Collections.sort(dcmFiles, new AlphanumComparator());
         imageArrayXY = new MR[dcmFiles.size()];
 
@@ -172,6 +176,20 @@ public class MRSeries {
         boolean compressed = transferSyntaxUID.startsWith(JPEG_MPEG);
 
         return new double[]{psX, psY, st, compressed ? 1 : 0};
+    }
+
+    void decompress() {
+        if (!isCompressed) {
+            return;
+        }
+
+        dcmFiles.stream().forEach((p) -> {
+            try {
+                DCMUtils.decompressDCM(p.toString(), p.toString());
+            } catch (Exception ex) {
+                DBG.accept(ex + "\n");
+            }
+        });
     }
 
     private class ReadMR implements Runnable {

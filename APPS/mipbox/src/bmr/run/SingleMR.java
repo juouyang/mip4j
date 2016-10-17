@@ -25,6 +25,6 @@ public class SingleMR {
             //studyRoot = new File("/home/ju/workspace/_BREAST_MRI/SMHT/717/");
         }
         final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
-        k.show(k.colorMapping(null));
+        k.show();
     }
 }

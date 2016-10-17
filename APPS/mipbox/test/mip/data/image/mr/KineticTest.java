@@ -46,6 +46,6 @@ public class KineticTest {
      */
     @Test
     public void testShow() {
-        instance.show(instance.colorMapping(null));
+        instance.show();
     }
 }

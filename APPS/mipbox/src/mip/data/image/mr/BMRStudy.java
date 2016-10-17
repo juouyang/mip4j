@@ -129,4 +129,10 @@ public class BMRStudy {
         return ret;
     }
 
+    public void decompress() {
+        T0.decompress();
+        T1.decompress();
+        T2.decompress();
+    }
+
 }

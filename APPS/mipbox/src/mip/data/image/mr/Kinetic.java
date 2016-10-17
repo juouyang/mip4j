@@ -40,7 +40,7 @@ public class Kinetic {
         File studyRoot = new File(BMRStudy.SBMR);
         BMRStudy bmr = new BMRStudy(studyRoot.toPath());
         Kinetic k = new Kinetic(bmr);
-        k.show(k.colorMapping(null));
+        k.show();
     }
 
     public final BMRStudy bmrStudy;
@@ -48,7 +48,6 @@ public class Kinetic {
     public final int height;
     public final int size;
     public final int glandular;
-    public final String roiFile;
 
     public Kinetic(BMRStudy bmr) {
         bmrStudy = bmr;
@@ -78,12 +77,14 @@ public class Kinetic {
                 DBG.accept(",\tnoiseFloor = " + noiseFloor + "\n");
             }
         }
-
-        roiFile = bmrStudy.studyRoot + "//" + bmrStudy.getStudyID() + ".zip";
     }
 
     public ImagePlus colorMapping(BitVolume bv) {
         Timer t = new Timer();
+
+        int vWashout = 0;
+        int vPlateau = 0;
+        int vPersist = 0;
 
         ImageStack ims = new ImageStack(width, height);
         {
@@ -101,8 +102,23 @@ public class Kinetic {
                             continue;
                         }
 
-                        if ((bv != null && !bv.getPixel(x, y, i))) {
-                            continue;
+                        if (bv != null) {
+                            if (!bv.getPixel(x, y, i)) {
+                                continue;
+                            }
+
+                            // accumulate
+                            switch (kt) {
+                                case WASHOUT:
+                                    vWashout++;
+                                    break;
+                                case PLATEAU:
+                                    vPlateau++;
+                                    break;
+                                case PERSIST:
+                                    vPersist++;
+                                    break;
+                            }
                         }
 
                         rgb[0] = kt.color.getRed();
@@ -113,6 +129,12 @@ public class Kinetic {
                 }
                 ims.addSlice(cp);
             }
+        }
+
+        if (bv != null) {
+            DBG.accept("WASHOUT: " + vWashout + "\n");
+            DBG.accept("PLATEAU: " + vPlateau + "\n");
+            DBG.accept("PERSIST: " + vPersist + "\n");
         }
 
         t.printElapsedTime("colorMapping");
@@ -128,7 +150,15 @@ public class Kinetic {
         return String.format("%3d,%3d,%3d=%4d~%4d~%4d %s", x, y, z, i, p, d, s);
     }
 
-    public void show(ImagePlus i) {
+    public void show() {
+        this.show(this.colorMapping(null));
+    }
+
+    private void render(ImagePlus i) {
+        IJUtils.render(i, 1, 0, 0);
+    }
+
+    private void show(ImagePlus i) {
         i.show();
         i.setPosition(size / 2);
 
@@ -191,10 +221,15 @@ public class Kinetic {
                     if (voi != null) {
                         {
                             List<Roi> rois = voi.getROIs();
+                            String roiFile = bmrStudy.studyRoot + "/"
+                                    + bmrStudy.getStudyID() + "_"
+                                    + ((X < width / 2) ? "R" : "L") + "_"
+                                    + String.format("%03d%03d%03d", X, Y, Z)
+                                    + ".zip";
                             ROIUtils.saveROIs(rois, roiFile);
                             ROIUtils.showROI(roiFile);
                         }
-                        voi.render();
+                        render(colorMapping(voi));
                     }
                 }
                 super.mouseClicked(me);

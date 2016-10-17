@@ -73,7 +73,7 @@ public class BitVolume {
         Point3d p = new Point3d(256, 256, 128);
         final Random random = new Random();
 
-        for (int i = 0; i < 5000000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             p.X = random.nextBoolean() ? p.X - 1 : p.X + 1;
             p.Y = random.nextBoolean() ? p.Y - 1 : p.Y + 1;
             p.Z = random.nextBoolean() ? p.Z - 1 : p.Z + 1;
@@ -113,7 +113,7 @@ public class BitVolume {
 
     public void render() {
         ImagePlus imp = new ImagePlus("", IJUtils.toImageStack(this.imageArrayXY));
-        IJUtils.render(imp);
+        IJUtils.render(imp, 1, 70, 0);
     }
 
     public List<Roi> getROIs() {
