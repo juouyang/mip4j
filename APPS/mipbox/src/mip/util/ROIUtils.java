@@ -8,6 +8,7 @@ import ij.io.RoiDecoder;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.geom.GeneralPath;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,6 +23,7 @@ import mip.data.image.BitVolume;
 public class ROIUtils {
 
     private static final RoiManager SAVER = new RoiManager(true);
+    private static final Opener OPENER = new Opener();
 
     public static void showROI(String zipFile) {
         RoiManager rm = RoiManager.getInstance();
@@ -31,33 +33,61 @@ public class ROIUtils {
             rm.close();
         }
         IJUtils.openImageJ();
-        IJ.getImage().setRoi(0, 0, 0, 0);
         IJ.run("Select None");
         if (zipFile != null) {
-            new Opener().openZip(zipFile);
+            OPENER.openZip(zipFile);
         }
     }
 
-    public static void saveROIs(List<Roi> rois, String zipFile) {
+    public static String getDesc(List<Roi> voi) {
+        int minZ = Integer.MAX_VALUE;
+        int maxZ = Integer.MIN_VALUE;
+        int X1 = Integer.MAX_VALUE;
+        int Y1 = Integer.MAX_VALUE;
+        int X2 = Integer.MIN_VALUE;
+        int Y2 = Integer.MIN_VALUE;
+        for (Roi roi : voi) {
+            final int z = roi.getPosition();
+            minZ = minZ > z ? z : minZ;
+            maxZ = maxZ < z ? z : maxZ;
+            final Rectangle b = roi.getBounds();
+            final int x1 = b.x;
+            final int y1 = b.y;
+            final int x2 = b.x + b.width;
+            final int y2 = b.y + b.height;
+            X1 = X1 > x1 ? x1 : X1;
+            Y1 = Y1 > y1 ? y1 : Y1;
+            X2 = X2 < x2 ? x2 : X2;
+            Y2 = Y2 < y2 ? y2 : Y2;
+            //DBG.accept(x1 + "\t" + y1 + "\t" + x2 + "\t" + y2 + "\n");
+        }
+        final int w = X2 - X1;
+        final int h = Y2 - Y1;
+        final int l = maxZ - minZ;
+        //DBG.accept(minZ + "\t" + maxZ + "\t" + X1 + "\t" + Y1 + "\t" + X2 + "\t" + Y2 + "\n");
+        return String.format("%03d-%03d_%03dX%03dX%03d", minZ, maxZ, w, h, l);
+    }
+
+    public static void saveVOI(List<Roi> voi, String zipFile) {
         new File(zipFile).delete();
         if (SAVER.getCount() != 0) {
             SAVER.runCommand("Select All");
             SAVER.runCommand("Delete");
         }
-        rois.stream().forEach((roi) -> {
+        voi.stream().forEach((roi) -> {
             SAVER.addRoi(roi);
         });
         SAVER.runCommand("save", zipFile);
     }
 
-    public static BitVolume openROIs(String zipFile, int w, int h, int l) {
+    public static BitVolume openVOI(String zipFile, int w, int h, int l) {
         if (!IOUtils.fileExisted(zipFile)) {
             return null;
         }
 
         BitVolume bv = new BitVolume(w, h, l);
-        List<Roi> rois = ROIUtils.openROIs(zipFile);
-        rois.stream().forEach((roi) -> {
+        List<Roi> voi = ROIUtils.openVOI(zipFile);
+        voi.stream().forEach((roi) -> {
             int z = roi.getPosition() - 1;
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
@@ -71,8 +101,8 @@ public class ROIUtils {
         return bv;
     }
 
-    public static List<Roi> openROIs(String zipFile) {
-        List<Roi> rois = new ArrayList<>(10);
+    public static List<Roi> openVOI(String zipFile) {
+        List<Roi> voi = new ArrayList<>(10);
 
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile))) {
             while (true) {
@@ -99,7 +129,7 @@ public class ROIUtils {
                     Roi roi = new RoiDecoder(out.toByteArray(), name).getRoi();
 
                     if (roi != null) {
-                        rois.add(roi);
+                        voi.add(roi);
                     }
                 }
 
@@ -109,7 +139,7 @@ public class ROIUtils {
         } catch (IOException ignore) {
         }
 
-        return rois;
+        return voi;
     }
 
     private static boolean selected(ImageProcessor ip, int x, int y, float min, float max) {

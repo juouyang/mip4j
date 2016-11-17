@@ -8,7 +8,6 @@ import ij.gui.ImageWindow;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ShortProcessor;
-import ij.process.StackConverter;
 import ij3d.ContentInstant;
 import ij3d.Image3DUniverse;
 import ij3d.ImageWindow3D;

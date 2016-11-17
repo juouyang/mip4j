@@ -113,7 +113,7 @@ public class BitVolume {
 
     public void render() {
         ImagePlus imp = new ImagePlus("", IJUtils.toImageStack(this.imageArrayXY));
-        IJUtils.render(imp, 1, 70, 0);
+        IJUtils.render(imp, 2, 0, 0);
     }
 
     public List<Roi> getROIs() {

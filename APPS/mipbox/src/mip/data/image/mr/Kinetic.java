@@ -17,7 +17,10 @@ import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import mip.data.image.BitVolume;
 import mip.data.image.Point3d;
@@ -39,17 +42,23 @@ public class Kinetic {
     public static void main(String args[]) {
         File studyRoot = new File(BMRStudy.SBMR);
         BMRStudy bmr = new BMRStudy(studyRoot.toPath());
-        Kinetic k = new Kinetic(bmr);
+        Kinetic k = new Kinetic(bmr, true);
         k.show();
     }
+    private final boolean EXIT_WHEN_WINDOW_CLOSED;
 
     public final BMRStudy bmrStudy;
     public final int width;
     public final int height;
     public final int size;
     public final int glandular;
+    public boolean finished = false;
 
     public Kinetic(BMRStudy bmr) {
+        this(bmr, true);
+    }
+
+    public Kinetic(BMRStudy bmr, boolean exitOnClosed) {
         bmrStudy = bmr;
         width = bmr.T0.getWidth();
         height = bmr.T0.getHeight();
@@ -71,12 +80,13 @@ public class Kinetic {
                     noiseFloor++;
                 }
 
-                double glandularNoiseRatio = noiseFloor > 1000 ? 1.47 : 1.33;
+                double glandularNoiseRatio = noiseFloor < 2000 ? 1.47 : 1.33;
                 glandular = (int) (noiseFloor * glandularNoiseRatio);
                 DBG.accept("glandular = " + glandular);
                 DBG.accept(",\tnoiseFloor = " + noiseFloor + "\n");
             }
         }
+        EXIT_WHEN_WINDOW_CLOSED = exitOnClosed;
     }
 
     public ImagePlus colorMapping(BitVolume bv) {
@@ -131,49 +141,76 @@ public class Kinetic {
             }
         }
 
-        if (bv != null) {
-            DBG.accept("WASHOUT: " + vWashout + "\n");
-            DBG.accept("PLATEAU: " + vPlateau + "\n");
-            DBG.accept("PERSIST: " + vPersist + "\n");
+        String title = "";
+        {
+            if (bv != null) {
+                final int v = vWashout + vPlateau + vPersist;
+                final int washout = (int) (vWashout * 100.0 / v);
+                final int plateau = (int) (vPlateau * 100.0 / v);
+                final int persist = (int) (vPersist * 100.0 / v);
+                DBG.accept("WASHOUT: " + washout + "%\n");
+                DBG.accept("PLATEAU: " + plateau + "%\n");
+                DBG.accept("PERSIST: " + persist + "%\n");
+                title = String.format("%2d-%2d-%2d", washout, plateau, persist);
+            }
         }
 
         t.printElapsedTime("colorMapping");
 
-        return new ImagePlus("Kinetics", ims);
+        return new ImagePlus(title, ims);
     }
 
     public String toString(int x, int y, int z) {
+        final String sid = bmrStudy.getStudyID();
         final short i = bmrStudy.getPixel(x, y, z, 0);
         final short p = bmrStudy.getPixel(x, y, z, 1);
         final short d = bmrStudy.getPixel(x, y, z, 2);
         final String s = mapping(i, p, d).toString();
-        return String.format("%3d,%3d,%3d=%4d~%4d~%4d %s", x, y, z, i, p, d, s);
+        return String.format("%5s: %d,%d,%d=%d~%d~%d %s", sid, x, y, z, i, p, d, s);
     }
 
-    public void show() {
-        this.show(this.colorMapping(null));
+    public ImageWindow show() {
+        ImagePlus imp = colorMapping(null);
+        show(imp, bmrStudy.T1.mip());
+        return imp.getWindow();
     }
 
     private void render(ImagePlus i) {
         IJUtils.render(i, 1, 0, 0);
     }
 
-    private void show(ImagePlus i) {
+    private void show(ImagePlus i, ImagePlus mip) {
         i.show();
+        mip.show();
         i.setPosition(size / 2);
 
         final ImageWindow iw = i.getWindow();
-        IJUtils.exitWhenNoWindow(iw);
         iw.setResizable(false);
+        iw.setLocation(10 + 512, 10);
+        mip.getWindow().setLocation(10, 10);
+        iw.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent we) {
+                mip.getWindow().close();
+                synchronized (Kinetic.this) {
+                    finished = true;
+                    Kinetic.this.notifyAll();
+                    System.gc();
+                }
+                if (EXIT_WHEN_WINDOW_CLOSED) {
+                    System.exit(0);
+                }
+            }
+        });
 
         final ImageCanvas ic = i.getCanvas();
         ic.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                final int Z = i.getCurrentSlice() - 1;
+                final int Z = i.getCurrentSlice();
                 final int X = ic.getCursorLoc().x;
                 final int Y = ic.getCursorLoc().y;
-                i.setTitle(Kinetic.this.toString(X, Y, Z));
+                i.setTitle(Kinetic.this.toString(X, Y, Z - 1));
                 super.mouseMoved(e);
             }
         });
@@ -215,21 +252,36 @@ public class Kinetic {
                     final int X = ic.getCursorLoc().x;
                     final int Y = ic.getCursorLoc().y;
                     final int Z = i.getCurrentSlice() - 1;
+                    final String side = (X < width / 2) ? "R" : "L";
 
                     Point3d seed = new Point3d(X, Y, Z);
                     BitVolume voi = BitVolume.regionGrowing(Kinetic.this, seed);
                     if (voi != null) {
+                        ImagePlus imp = colorMapping(voi);
                         {
                             List<Roi> rois = voi.getROIs();
+                            String desc = ROIUtils.getDesc(rois);
+
                             String roiFile = bmrStudy.studyRoot + "/"
-                                    + bmrStudy.getStudyID() + "_"
-                                    + ((X < width / 2) ? "R" : "L") + "_"
-                                    + String.format("%03d%03d%03d", X, Y, Z)
+                                    + bmrStudy.getStudyID()
+                                    + "_" + side + "_"
+                                    + desc + "_" + imp.getTitle()
                                     + ".zip";
-                            ROIUtils.saveROIs(rois, roiFile);
+                            final String pn = bmrStudy.studyRoot + "/"
+                                    + bmrStudy.getStudyID()
+                                    + "_" + side + "_"
+                                    + desc + "_"
+                                    + String.format("%d_%d_%d.seed", X, Y, Z);
+
+                            ROIUtils.saveVOI(rois, roiFile);
                             ROIUtils.showROI(roiFile);
+
+                            File p = new File(pn);
+                            try {
+                                p.createNewFile();
+                            } catch (IOException ex) {
+                            }
                         }
-                        render(colorMapping(voi));
                     }
                 }
                 super.mouseClicked(me);
