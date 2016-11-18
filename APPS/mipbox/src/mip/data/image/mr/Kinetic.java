@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.List;
 import mip.data.image.BitVolume;
 import mip.data.image.Point3d;
-import static mip.util.DGBUtils.DBG;
 import mip.util.IJUtils;
 import mip.util.ROIUtils;
 import mip.util.Timer;
@@ -38,6 +37,7 @@ public class Kinetic {
 
     private static final double STRONG_ENHANCE = 0.32;
     private static final Range<Double> PLATEAU = Range.between(-0.05, 0.05);
+    private static final double GLANDULAR_NOISE_RATIO = 1.47;
 
     public static void main(String args[]) {
         File studyRoot = new File(BMRStudy.SBMR);
@@ -79,11 +79,7 @@ public class Kinetic {
                     }
                     noiseFloor++;
                 }
-
-                double glandularNoiseRatio = noiseFloor < 2000 ? 1.47 : 1.33;
-                glandular = (int) (noiseFloor * glandularNoiseRatio);
-                DBG.accept("glandular = " + glandular);
-                DBG.accept(",\tnoiseFloor = " + noiseFloor + "\n");
+                glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
             }
         }
         EXIT_WHEN_WINDOW_CLOSED = exitOnClosed;
@@ -169,36 +165,32 @@ public class Kinetic {
         return String.format("%5s: %d,%d,%d=%d~%d~%d %s", sid, x, y, z, i, p, d, s);
     }
 
-    public ImageWindow show() {
+    public void show() {
         ImagePlus imp = colorMapping(null);
-        show(imp, bmrStudy.T1.mip());
-        return imp.getWindow();
+        display(imp);
     }
 
-    private void render(ImagePlus i) {
-        IJUtils.render(i, 1, 0, 0);
-    }
-
-    private void show(ImagePlus i, ImagePlus mip) {
+    private void display(ImagePlus i) {
         i.show();
+        ImagePlus mip = bmrStudy.T1.mip();
         mip.show();
         i.setPosition(size / 2);
 
         final ImageWindow iw = i.getWindow();
         iw.setResizable(false);
-        iw.setLocation(10 + 512, 10);
+        iw.setLocation(10 + 530, 10);
         mip.getWindow().setLocation(10, 10);
         iw.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent we) {
+                if (EXIT_WHEN_WINDOW_CLOSED) {
+                    System.exit(0);
+                }
                 mip.getWindow().close();
                 synchronized (Kinetic.this) {
                     finished = true;
                     Kinetic.this.notifyAll();
                     System.gc();
-                }
-                if (EXIT_WHEN_WINDOW_CLOSED) {
-                    System.exit(0);
                 }
             }
         });
@@ -274,7 +266,7 @@ public class Kinetic {
                                     + String.format("%d_%d_%d.seed", X, Y, Z);
 
                             ROIUtils.saveVOI(rois, roiFile);
-                            ROIUtils.showROI(roiFile);
+                            ROIUtils.showROI(roiFile, EXIT_WHEN_WINDOW_CLOSED);
 
                             File p = new File(pn);
                             try {
@@ -282,6 +274,7 @@ public class Kinetic {
                             } catch (IOException ex) {
                             }
                         }
+                        IJUtils.render(imp, 1, 0, 0);
                     }
                 }
                 super.mouseClicked(me);

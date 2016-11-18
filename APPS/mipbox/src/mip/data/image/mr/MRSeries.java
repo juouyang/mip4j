@@ -5,6 +5,7 @@ import gdcm.StringFilter;
 import gdcm.Tag;
 import ij.ImagePlus;
 import ij.plugin.ZProjector;
+import ij.process.StackConverter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,13 +30,13 @@ public class MRSeries {
     private static final Tag T_PIXELSPACING = new gdcm.Tag(0x0028, 0x0030);
 
     public static void main(String[] args) throws InterruptedException {
-        MRSeries mrs = new MRSeries(IOUtils.listFiles(BMRStudy.SBMR + "2"));
-        mrs.show(mrs.getSize() / 2);
+        MRSeries mrs = new MRSeries(IOUtils.listFiles(BMRStudy.SBMR + "3"));
+        mrs.display(mrs.getSize() / 2);
         mrs.render(2);
         {
             ImagePlus mip = mrs.mip();
             mip.show();
-            IJUtils.exitWhenNoWindow(mip.getWindow());
+            IJUtils.exitWhenWindowClosed(mip.getWindow());
         }
     }
     public final MR[] imageArrayXY;
@@ -82,13 +83,15 @@ public class MRSeries {
         return mip;
     }
 
-    public void show(int p) {
+    public void display(int p) {
         imp.show();
         imp.setPosition(p);
-        IJUtils.exitWhenNoWindow(imp.getWindow());
+        IJUtils.exitWhenWindowClosed(imp.getWindow());
     }
 
     public void render(int resample) {
+        StackConverter sc = new StackConverter(imp);
+        sc.convertToGray8();
         IJUtils.render(imp, resample, 70, 25);
     }
 

@@ -28,19 +28,17 @@ public class IJUtils {
         return UNIV;
     }
 
-    public static ImageJ openImageJ() {
+    public static ImageJ openImageJ(boolean exitWhenQuitting) {
         ImageJ ij = IJ.getInstance() == null ? new ImageJ() : IJ.getInstance();
-        ij.exitWhenQuitting(true);
+        ij.exitWhenQuitting(exitWhenQuitting);
         return ij;
     }
 
     public static void render(ImagePlus i) {
-        render(i, 2, 0, 0);
+        render(i, 1, 0, 0);
     }
 
     public static void render(ImagePlus i, int resample, int trans, int threshold) {
-        Timer t = new Timer();
-
         Image3DUniverse univ = get3DUniv();
         univ.removeAllContents();
         final ImagePlus imp = i.duplicate();
@@ -72,11 +70,9 @@ public class IJUtils {
                 }
             });
         }
-
-        t.printElapsedTime("render");
     }
 
-    public static void exitWhenNoWindow(ImageWindow iw) {
+    public static void exitWhenWindowClosed(ImageWindow iw) {
         iw.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent we) {

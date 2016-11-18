@@ -108,7 +108,7 @@ public class BitVolume {
     public void show() {
         ImagePlus imp = new ImagePlus("", IJUtils.toImageStack(imageArrayXY));
         imp.show();
-        IJUtils.exitWhenNoWindow(imp.getWindow());
+        IJUtils.exitWhenWindowClosed(imp.getWindow());
     }
 
     public void render() {

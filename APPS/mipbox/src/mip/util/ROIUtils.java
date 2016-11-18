@@ -25,14 +25,14 @@ public class ROIUtils {
     private static final RoiManager SAVER = new RoiManager(true);
     private static final Opener OPENER = new Opener();
 
-    public static void showROI(String zipFile) {
+    public static void showROI(String zipFile, boolean exitWhenQuitting) {
         RoiManager rm = RoiManager.getInstance();
         if (rm != null) {
             rm.runCommand("Select All");
             rm.runCommand("Delete");
             rm.close();
         }
-        IJUtils.openImageJ();
+        IJUtils.openImageJ(exitWhenQuitting);
         IJ.run("Select None");
         if (zipFile != null) {
             OPENER.openZip(zipFile);

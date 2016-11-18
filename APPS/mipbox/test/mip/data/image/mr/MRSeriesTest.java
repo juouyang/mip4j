@@ -96,7 +96,7 @@ public class MRSeriesTest {
      */
     @Test
     public void testShow() {
-        instance.show(1);
+        instance.display(1);
     }
 
     /**

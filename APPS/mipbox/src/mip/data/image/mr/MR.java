@@ -12,10 +12,10 @@ public class MR extends ShortImage {
         MR mr = MROpener.openMR();
         mr.show();
         {
-            IJUtils.openImageJ();
+            IJUtils.openImageJ(true);
             ImagePlus imp = mr.toImagePlus("");
             imp.show();
-            IJUtils.exitWhenNoWindow(imp.getWindow());
+            IJUtils.exitWhenWindowClosed(imp.getWindow());
         }
     }
     private final String studyID;

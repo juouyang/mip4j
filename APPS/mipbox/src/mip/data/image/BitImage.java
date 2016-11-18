@@ -28,7 +28,7 @@ public class BitImage extends AbstractImage {
             ImagePlus imp = mr.toImagePlus("");
             imp.setRoi(bi.getRoi());
             imp.show();
-            IJUtils.exitWhenNoWindow(imp.getWindow());
+            IJUtils.exitWhenWindowClosed(imp.getWindow());
         }
     }
 
