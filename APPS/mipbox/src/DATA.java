@@ -45,6 +45,11 @@ public class DATA {
     static int countSMHT = 0;
     static int countTMUH = 0;
 
+    static final String SMHT = "SMHT";
+    static final String TMUH = "TMUH";
+    static final String HOSPITAL = "";
+    static final String DATA_ROOT = "D:\\Dropbox\\";
+
     public static void main(String args[]) throws UnsupportedEncodingException, IOException, IllegalArgumentException, IllegalAccessException {
 
         Map<String, List<DATA.MRStudy>> mrStudyList = new HashMap<>();
@@ -730,11 +735,6 @@ public class DATA {
             FileUtils.writeStringToFile(new File(DATA_ROOT + "MR.csv"), sb.toString());
         }
     }
-
-    static final String SMHT = "SMHT";
-    static final String TMUH = "TMUH";
-    static final String HOSPITAL = "";
-    static final String DATA_ROOT = "D:\\Dropbox\\";
 
     static class Pathology {
 

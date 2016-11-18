@@ -18,7 +18,7 @@ import mip.util.IOUtils;
  */
 public class FOO {
 
-    private static final String ROOT = "/home/ju/workspace/_BREAST_MRI/TMUH";
+    private static final String ROOT = "W:/_BREAST_MRI/TMUH";
 
     public static void main(String[] args) {
         final ArrayList<Path> listFiles = IOUtils.listFiles(ROOT);
