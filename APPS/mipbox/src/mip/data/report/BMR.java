@@ -23,7 +23,7 @@ public class BMR implements Comparable<BMR> {
     public static final String MR_ROOT = "W:/_BREAST_MRI/";
     private static final Logger LOG = LogUtils.LOGGER;
 
-    public static BMR assignBMR(Diagnosis d, Set<BMR> set, LocalDate targetDate) {
+    public static BMR getBMR(Diagnosis d, Set<BMR> set, LocalDate targetDate) {
         assert (d.side != Side.MIXED);
         if (set == null || d.cancerType == CancerType.UNKNOWN || d.region == Region.UNKNOWN || d.side == Side.UNKNOWN) {
             return null;

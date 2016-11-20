@@ -33,7 +33,8 @@ public class Pathology {
 
     private static final String DATA_ROOT = "/home/ju/Dropbox/";
     private static final Base64.Decoder DECODER = Base64.getDecoder();
-    private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final String DF = "yyyy-MM-dd";
+    private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern(DF);
     private static final LocalDate DEFAULT_DATE = LocalDate.of(1900, 01, 01);
     private static final String IMMUNO_KEYWORD = "IMMUNOHISTOCHEMICAL STUDY";
     private static final Logger LOG = LogUtils.LOGGER;
@@ -63,7 +64,7 @@ public class Pathology {
                     }
                     bmrList.get(pid).add(bmr);
                 }
-                LOG.log(Level.FINE, "{0} MR studies are processed.", count);
+                LOG.log(Level.FINE, "{0} MR studies", count);
             }
         }
 
@@ -83,8 +84,8 @@ public class Pathology {
 
                     String[] tokens = line.split("\t");
                     String pid = tokens[0];
-                    String encodedText = tokens[1];
-                    String decodeText = new String(DECODER.decode(encodedText), "UTF-8");
+                    String en = tokens[1];
+                    String decodeText = new String(DECODER.decode(en), "UTF-8");
                     String[] lines = decodeText.replace("\r", "").split("\n");
 
                     String patientName = "";
@@ -188,7 +189,9 @@ public class Pathology {
                     }
 
                     biopsyDate = biopsyDate.equals(DEFAULT_DATE)
-                            ? (receiveDate.equals(DEFAULT_DATE) ? DEFAULT_DATE : receiveDate)
+                            ? (receiveDate.equals(DEFAULT_DATE)
+                            ? DEFAULT_DATE
+                            : receiveDate)
                             : biopsyDate;
 
                     assert (!pathologyID.equals("ERROR!!!!"));
@@ -212,18 +215,15 @@ public class Pathology {
                     lines = diagnosisText.split("\n");
                     for (final String s : lines) {
 
-                        Diagnosis d = new Diagnosis(Region.fromString(s));
+                        Diagnosis d = new Diagnosis(s);
                         {
-                            d.side = Side.fromString(s);
                             if (d.side == Side.MIXED) {
                                 continue; // ignore diagnosis with ambiguous Side
                             }
-                            d.biopsyType = Biopsy.fromString(s);
-                            d.cancerType = CancerType.fromString(s);
-                            d.diagnosisText = s;
                             d.pathologyLink = p;
-                            d.bmrLink = BMR.assignBMR(d, bmrList.get(pid), biopsyDate);
-                            p.diagnosisList.add(d); // a pathology may have many diagnoses
+                            d.bmrLink = BMR.getBMR(d, bmrList.get(pid), biopsyDate);
+                            // a pathology may have many diagnoses
+                            p.diagnosisList.add(d);
                         }
 
                         BMR bmr = d.bmrLink;
@@ -257,6 +257,15 @@ public class Pathology {
                         }
                     }
                     // </editor-fold>
+
+                    // <editor-fold defaultstate="collapsed" desc="analyse immunohistochemical of the Pathology">
+                    int immunoCount = StringUtils.countMatches(pathologyText, IMMUNO_KEYWORD);
+                    p.immunoText = (immunoCount > 0)
+                            ? StringUtils.replace(immunohistochemicalText,
+                                    "\"", // for spreadsheet
+                                    "'").trim()
+                            : "-";
+                    // </editor-fold>
                 } // for each pathology
             }
         }
@@ -270,8 +279,8 @@ public class Pathology {
             int sumBenignNotBreast = 0;
             int sumIDC = 0;
             int sumDCIS = 0;
-            int sumMultiBreastCancer = 0;
-            int sumUnknownCancerType = 0;
+            int sumMixedType = 0;
+            int sumUnknownType = 0;
             int sumNeedle = 0;
             int sumExcision = 0;
             int sumUnknownBiopsy = 0;
@@ -288,8 +297,8 @@ public class Pathology {
                     sumBenignNotBreast += d.cancerType == CancerType.BENIGN && d.region != Region.BREAST ? 1 : 0;
                     sumIDC += d.cancerType == CancerType.IDC ? 1 : 0;
                     sumDCIS += d.cancerType == CancerType.DCIS ? 1 : 0;
-                    sumMultiBreastCancer += d.cancerType == CancerType.MIXED ? 1 : 0;
-                    sumUnknownCancerType += d.cancerType == CancerType.UNKNOWN ? 1 : 0;
+                    sumMixedType += d.cancerType == CancerType.MIXED ? 1 : 0;
+                    sumUnknownType += d.cancerType == CancerType.UNKNOWN ? 1 : 0;
                     //
                     sumNeedle += d.biopsyType == Biopsy.NEEDLE ? 1 : 0;
                     sumExcision += d.biopsyType == Biopsy.EXCISIONAL ? 1 : 0;
@@ -300,27 +309,27 @@ public class Pathology {
 
             long sumSide = sumLeft + sumRight + sumUnknownSide;
             long sumCancerType = sumBenignBreast + sumIDC + sumDCIS
-                    + sumMultiBreastCancer
-                    + sumUnknownCancerType + sumBenignNotBreast;
+                    + sumMixedType
+                    + sumUnknownType + sumBenignNotBreast;
             long sumBiopsyType = sumNeedle + sumExcision + sumUnknownBiopsy;
             assert (sumSide == sumCancerType && sumSide == sumBiopsyType);
 
+            LOG.log(Level.FINE, "{0} pathology reports", pathologyList.size());
+            LOG.log(Level.FINE, "{0} diagnoses are within these reports.\n", sumSide);
+            //
             LOG.log(Level.FINE, "\t{0} left diagnoses", sumLeft);
             LOG.log(Level.FINE, "\t{0} right diagnoses", sumRight);
-            LOG.log(Level.FINE, "\t{0} diagnoses with unknown side", sumUnknownSide);
-            LOG.log(Level.FINE, "\t\t{0} in total.", (sumLeft + sumRight + sumUnknownSide));
+            LOG.log(Level.FINE, "\t{0} diagnoses with unknown side\n", sumUnknownSide);
             //
             LOG.log(Level.FINE, "\t{0} benign", sumBenignBreast);
             LOG.log(Level.FINE, "\t{0} IDC", sumIDC);
             LOG.log(Level.FINE, "\t{0} DCIS", sumDCIS);
-            LOG.log(Level.FINE, "\t{0} multiple type breast lesions", sumMultiBreastCancer);
-            LOG.log(Level.FINE, "\t{0} are not located in breast", (sumUnknownCancerType + sumBenignNotBreast));
-            LOG.log(Level.FINE, "\t\t{0} in total.", (sumBenignBreast + sumIDC + sumDCIS + sumMultiBreastCancer + sumUnknownCancerType + sumBenignNotBreast));
+            LOG.log(Level.FINE, "\t{0} multiple type breast lesions", sumMixedType);
+            LOG.log(Level.FINE, "\t{0} are ignored\n", (sumUnknownType + sumBenignNotBreast));
             //
             LOG.log(Level.FINE, "\t{0} needle biopsy", sumNeedle);
             LOG.log(Level.FINE, "\t{0} excision", sumExcision);
-            LOG.log(Level.FINE, "\t{0} unknown type fo biopsy", sumUnknownBiopsy);
-            LOG.log(Level.FINE, "\t\t{0} in total.", (sumNeedle + sumExcision + sumUnknownBiopsy));
+            LOG.log(Level.FINE, "\t{0} unknown type fo biopsy\n", sumUnknownBiopsy);
         }
 
         StringBuilder mrOneSideSingleDiagnosis = new StringBuilder(4096);
@@ -365,30 +374,30 @@ public class Pathology {
             int diagnoses = 0;
             int diagnosesMerged = 0;
             int bmrMixedDiagnoses = 0;
-            Set<BMR> bmrOnlyLeftSideOneDiagnosis = new TreeSet<>();
-            Set<BMR> bmrOnlyRightSideOneDiagnosis = new TreeSet<>();
-            Set<BMR> bmrBothSideOneDiagnosis = new TreeSet<>();
+            int bmrOnlyLeftSideOneDiagnosis = 0;
+            int bmrOnlyRightSideOneDiagnosis = 0;
+            int bmrBothSideOneDiagnosis = 0;
+
             for (BMR bmr : bmrWithDiagnosisSet) {
+
+                diagnosesMerged += bmr.duplicateTypeDiagnosisList.size();
+                diagnoses += bmr.getTotalDiagnosesCount();
 
                 if (!bmr.leftMixedDiagnosisList.isEmpty() || !bmr.rightMixedDiagnosisList.isEmpty()) {
                     bmrMixedDiagnoses++;
                 } else {
-                    assert (bmr.leftMixedDiagnosisList.isEmpty());
-                    assert (bmr.rightMixedDiagnosisList.isEmpty());
+                    assert (bmr.leftMixedDiagnosisList.isEmpty() && bmr.rightMixedDiagnosisList.isEmpty());
 
                     if (bmr.leftDiagnosisList.size() == 1 && bmr.rightDiagnosisList.size() == 1) {
-                        bmrBothSideOneDiagnosis.add(bmr);
+                        bmrBothSideOneDiagnosis++;
                     } else if (bmr.leftDiagnosisList.size() == 1 && bmr.rightDiagnosisList.isEmpty()) {
-                        bmrOnlyLeftSideOneDiagnosis.add(bmr);
+                        bmrOnlyLeftSideOneDiagnosis++;
                     } else if (bmr.rightDiagnosisList.size() == 1 && bmr.leftDiagnosisList.isEmpty()) {
-                        bmrOnlyRightSideOneDiagnosis.add(bmr);
+                        bmrOnlyRightSideOneDiagnosis++;
                     } else {
                         bmrMixedDiagnoses++;
                     }
                 }
-
-                diagnosesMerged += bmr.duplicateTypeDiagnosisList.size();
-                diagnoses += bmr.getTotalDiagnosesCount();
             }
 
             int daignosesHasBMR = 0;
@@ -396,26 +405,28 @@ public class Pathology {
                 daignosesHasBMR = p.diagnosisList.stream().map((mip.data.report.Diagnosis d) -> d.bmrLink != null ? 1 : 0).reduce(daignosesHasBMR, Integer::sum);
             }
             assert (diagnoses + diagnosesMerged == daignosesHasBMR);
-            assert (bmrWithDiagnosisSet.size()
-                    == bmrOnlyLeftSideOneDiagnosis.size()
-                    + bmrOnlyRightSideOneDiagnosis.size()
-                    + bmrBothSideOneDiagnosis.size()
-                    + bmrMixedDiagnoses);
+            int sum = bmrOnlyLeftSideOneDiagnosis
+                    + bmrOnlyRightSideOneDiagnosis
+                    + bmrBothSideOneDiagnosis
+                    + bmrMixedDiagnoses;
+            assert (bmrWithDiagnosisSet.size() == sum);
 
-            LOG.log(Level.FINE, "\t{0} BMR with diagnosis", bmrWithDiagnosisSet.size());
-            LOG.log(Level.FINE, "\t{0} only left single", bmrOnlyLeftSideOneDiagnosis.size());
-            LOG.log(Level.FINE, "\t{0} only right single", bmrOnlyRightSideOneDiagnosis.size());
-            LOG.log(Level.FINE, "\t{0} left and right single", bmrBothSideOneDiagnosis.size());
-            LOG.log(Level.FINE, "\t{0} multiple", bmrMixedDiagnoses);
+            LOG.log(Level.FINE, "{0} MR has diagnosis", bmrWithDiagnosisSet.size());
+            LOG.log(Level.FINE, "\t{0} only left diagnosis", bmrOnlyLeftSideOneDiagnosis);
+            LOG.log(Level.FINE, "\t{0} only right diagnosis", bmrOnlyRightSideOneDiagnosis);
+            LOG.log(Level.FINE, "\t{0} left and right diagnosis", bmrBothSideOneDiagnosis);
+            LOG.log(Level.FINE, "\t{0} ignored diagnosis", bmrMixedDiagnoses);
         }
         // </editor-fold>
     }
 
-    private final String patientID;
-    private final String patientName;
-    private final String pathologyID;
+    final String patientID;
+    final String patientName;
+    final String pathologyID;
     final LocalDate biopsyDate;
     final List<Diagnosis> diagnosisList = new ArrayList<>(10);
+    final List<Immuno> immunoList = new ArrayList<>(2);
+    String immunoText;
 
     public Pathology(String pid, String pName, String pathID, LocalDate date) {
         patientID = pid;
@@ -441,35 +452,12 @@ public class Pathology {
 
             sb.append((d.bmrLink != null) ? d.bmrLink.hospital : "-").append(",");
             sb.append((d.bmrLink != null) ? d.bmrLink.studyID : "-").append(",");
-            sb.append((d.bmrLink != null) ? d.bmrLink.scanDate : "-");
+            sb.append((d.bmrLink != null) ? d.bmrLink.scanDate : "-").append(",");
+
+            sb.append("\"").append(immunoText).append("\"");
 
             sb.append("\n");
         }
         return sb.toString();
     }
-
-    public String toString(Diagnosis d) {
-        if (!diagnosisList.contains(d)) {
-            throw new IllegalArgumentException();
-        }
-        StringBuilder sb = new StringBuilder(64);
-
-        sb.append("\"'").append(String.format("%8s", patientID)).append("\"").append(",");
-        sb.append(String.format("%10s", patientName)).append(",");
-        sb.append(biopsyDate).append(",");
-        sb.append(d.region).append(",");
-        sb.append(d.side).append(",");
-        sb.append(d.biopsyType).append(",");
-        sb.append(d.cancerType).append(",");
-        sb.append("\"").append(d.diagnosisText).append("\"").append(",");
-        sb.append(pathologyID).append(",");
-
-        sb.append((d.bmrLink != null) ? d.bmrLink.hospital : "-").append(",");
-        sb.append((d.bmrLink != null) ? d.bmrLink.studyID : "-").append(",");
-        sb.append((d.bmrLink != null) ? d.bmrLink.scanDate : "-");
-
-        sb.append("\n");
-        return sb.toString();
-    }
-
 }

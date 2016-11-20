@@ -10,8 +10,11 @@ package mip.data.report;
  * @author ju
  */
 public class Immuno {
-    
-    Immuno() {
+
+    final String immunoText;
+
+    Immuno(String s) {
+        immunoText = s;
     }
-    
+
 }
