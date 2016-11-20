@@ -13,7 +13,6 @@ import java.util.Random;
 import java.util.Stack;
 import mip.data.image.mr.Kinetic;
 import mip.util.IJUtils;
-import mip.util.Timer;
 
 /**
  *
@@ -22,8 +21,6 @@ import mip.util.Timer;
 public class BitVolume {
 
     public static BitVolume regionGrowing(Kinetic k, Point3d seed) {
-        Timer t = new Timer();
-
         BitVolume selected = new BitVolume(k.width, k.height, k.size);
 
         /*if (!k.isStrongEnhanced(seed.X, seed.Y, seed.Z)) {
@@ -62,8 +59,6 @@ public class BitVolume {
                 }
             }
         }
-
-        t.printElapsedTime("regionGrowing");
 
         return selected;
     }
@@ -117,8 +112,6 @@ public class BitVolume {
     }
 
     public List<Roi> getROIs() {
-        Timer t = new Timer();
-
         List<Roi> rois = new ArrayList<>(50);
 
         int i = 0;
@@ -132,7 +125,6 @@ public class BitVolume {
             rois.add(roi);
         }
 
-        t.printElapsedTime("getROIs");
         return rois;
     }
 

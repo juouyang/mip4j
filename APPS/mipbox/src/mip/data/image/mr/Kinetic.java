@@ -22,11 +22,12 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Logger;
 import mip.data.image.BitVolume;
 import mip.data.image.Point3d;
 import mip.util.IJUtils;
+import mip.util.LogUtils;
 import mip.util.ROIUtils;
-import mip.util.Timer;
 import org.apache.commons.lang3.Range;
 
 /**
@@ -38,6 +39,7 @@ public class Kinetic {
     private static final double STRONG_ENHANCE = 0.32;
     private static final Range<Double> PLATEAU = Range.between(-0.05, 0.05);
     private static final double GLANDULAR_NOISE_RATIO = 1.47;
+    private static final Logger LOG = LogUtils.LOGGER;
 
     public static void main(String args[]) {
         File studyRoot = new File(BMRStudy.SBMR);
@@ -86,8 +88,6 @@ public class Kinetic {
     }
 
     public ImagePlus colorMapping(BitVolume bv) {
-        Timer t = new Timer();
-
         int vWashout = 0;
         int vPlateau = 0;
         int vPersist = 0;
@@ -144,14 +144,9 @@ public class Kinetic {
                 final int washout = (int) (vWashout * 100.0 / v);
                 final int plateau = (int) (vPlateau * 100.0 / v);
                 final int persist = (int) (vPersist * 100.0 / v);
-                DBG.accept("WASHOUT: " + washout + "%\n");
-                DBG.accept("PLATEAU: " + plateau + "%\n");
-                DBG.accept("PERSIST: " + persist + "%\n");
                 title = String.format("%2d-%2d-%2d", washout, plateau, persist);
             }
         }
-
-        t.printElapsedTime("colorMapping");
 
         return new ImagePlus(title, ims);
     }

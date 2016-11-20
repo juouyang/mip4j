@@ -4,9 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import static mip.util.DGBUtils.DBG;
 import mip.util.IOUtils;
-import mip.util.Timer;
 
 public class BMRStudy {
 
@@ -28,7 +26,6 @@ public class BMRStudy {
     public final MRSeries T2;
 
     public BMRStudy(Path studyRoot) {
-        Timer t = new Timer();
         this.studyRoot = studyRoot.toString();
         MRSeries[] ret = read_dicom_files(studyRoot);
         T0 = ret[0];
@@ -36,7 +33,6 @@ public class BMRStudy {
         T2 = ret[2];
         patientID = T0.imageArrayXY[0].getPatientID();
         studyID = T0.imageArrayXY[0].getStudyID();
-        t.printElapsedTime("BMRStudy");
     }
 
     public String getPatientID() {
@@ -65,7 +61,6 @@ public class BMRStudy {
     }
 
     private MRSeries[] read_dicom_files(Path studyRoot) {
-        DBG.accept(studyRoot.toAbsolutePath() + "\n");
         final Path p2 = studyRoot.resolve("2");
         final Path p3 = studyRoot.resolve("3");
         final Path p4 = studyRoot.resolve("4");
