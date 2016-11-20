@@ -5,12 +5,14 @@
  */
 package mip.data.report;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  *
  * @author ju
  */
 public enum Side {
-    UNKNOWN("Unknown"), LEFT("Left"), RIGHT("Right");
+    UNKNOWN("Unknown"), LEFT("Left"), RIGHT("Right"), MIXED("Mixed");
     private final String description;
 
     private Side(String s) {
@@ -22,4 +24,14 @@ public enum Side {
         return this.description;
     }
 
+    public static Side fromString(String s) {
+        if (StringUtils.containsIgnoreCase(s, "left") && StringUtils.containsIgnoreCase(s, "right")) {
+            return Side.MIXED;
+        }
+        return StringUtils.containsIgnoreCase(s, "left")
+                ? Side.LEFT
+                : StringUtils.containsIgnoreCase(s, "right")
+                ? Side.RIGHT
+                : Side.UNKNOWN;
+    }
 }

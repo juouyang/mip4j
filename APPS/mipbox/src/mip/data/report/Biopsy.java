@@ -22,8 +22,8 @@ public enum Biopsy {
         ", biopsy",
         "incisional biopsy"});
 
-    public final String[] keywords;
     private final String description;
+    final String[] keywords;
 
     private Biopsy(String d, String[] s) {
         description = d;
@@ -33,6 +33,21 @@ public enum Biopsy {
     @Override
     public String toString() {
         return this.description;
+    }
+
+    public static Biopsy fromString(String s) {
+        if ((s.contains(Biopsy.NEEDLE.keywords[0]) && s.contains(Biopsy.NEEDLE.keywords[1]))
+                || s.contains(Biopsy.NEEDLE.keywords[2])
+                || s.contains(Biopsy.NEEDLE.keywords[3])) {
+            return Biopsy.NEEDLE;
+        }
+        for (String keyword : Biopsy.EXCISIONAL.keywords) {
+            if (s.contains(keyword)) {
+                return Biopsy.EXCISIONAL;
+            }
+        }
+
+        return Biopsy.UNKNOWN;
     }
 
 }
