@@ -12,9 +12,18 @@ package mip.data.report;
 public class Immuno {
 
     final String immunoText;
+    double ki67;
 
     Immuno(String s) {
         immunoText = s;
     }
 
+    public String toString() {
+        StringBuilder sb = new StringBuilder(64);
+
+        sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67).append(",");
+        sb.append("\"").append(immunoText).append("\"");
+
+        return sb.toString();
+    }
 }
