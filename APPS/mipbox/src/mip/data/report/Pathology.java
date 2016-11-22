@@ -11,12 +11,12 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static mip.util.DGBUtils.DBG;
 import mip.util.LogUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Pathology {
 
-    private static final String DATA_ROOT = "D:/Dropbox/";
+    private static final String DATA_ROOT = "/home/ju/Dropbox/";
     private static final Base64.Decoder DECODER = Base64.getDecoder();
     private static final String DF = "yyyy-MM-dd";
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern(DF);
@@ -102,7 +102,14 @@ public class Pathology {
                     final int IMMUNO_SEARCH_WINDOW_SIZE = 20;
                     int immunoSearchWindowSizeinLine = IMMUNO_SEARCH_WINDOW_SIZE;
                     String ki67Text = "";
-                    double ki67 = Double.MIN_VALUE;
+                    String her2Text = "";
+                    boolean hasHER2 = false;
+                    String erText = "";
+                    String prText = "";
+                    int er = Integer.MIN_VALUE;
+                    int pr = Integer.MIN_VALUE;
+                    boolean isERStart = false;
+                    int erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
 
                     Pathology p;
                     // <editor-fold defaultstate="collapsed" desc="parse a Pathology">
@@ -169,10 +176,60 @@ public class Pathology {
                                 ki67Text = StringUtils.substring(s, start, end)
                                         .replace("-", " - ")
                                         .replace(" %", "%");
-                                ki67Text = (ki67Text.indexOf(":") == 0)
+                                ki67Text = (ki67Text.indexOf(':') == 0)
                                         ? ki67Text.substring(1).trim().toLowerCase()
                                         : ki67Text.trim().toLowerCase();
-                                ki67 = Pathology.parseKi67(ki67Text);
+                            }
+
+                            // HER-2
+                            if (StringUtils.indexOfAny(s, Immuno.HER2_KW) >= 0) {
+                                hasHER2 = true;
+                            }
+                            if (hasHER2 && StringUtils.containsIgnoreCase(s, "score")) {
+                                int her2Index = StringUtils.indexOfAny(s, Immuno.HER2_KW);
+                                int scoreIndex = StringUtils.indexOfIgnoreCase(s, "score");
+                                int start = her2Index >= 0 && her2Index < scoreIndex
+                                        ? her2Index
+                                        : 0;
+                                her2Text = StringUtils.substring(s, start);
+                                int end = Math.min(
+                                        her2Text.contains(")") ? her2Text.indexOf(')') + 1 : her2Text.length(),
+                                        StringUtils.indexOfIgnoreCase(her2Text, "score") + 9); // TH1102673
+                                her2Text = StringUtils.substring(her2Text, 0, end)
+                                        .replace("-", " - ")
+                                        .replace(" %", "%");
+                                her2Text = (her2Text.indexOf(':') == 0)
+                                        ? her2Text.substring(1).trim().toLowerCase()
+                                        : her2Text.trim().toLowerCase();
+                            }
+
+                            // ER
+                            if (StringUtils.indexOfAny(s, Immuno.ER_KW) >= 0) {
+                                isERStart = true;
+                                // ER in one line
+                                if (er == Integer.MIN_VALUE && (s.contains("%")
+                                        || StringUtils.containsIgnoreCase(s, "negative"))) {
+                                    int end = s.contains("%")
+                                            ? s.indexOf('%') + 1
+                                            : StringUtils.indexOfIgnoreCase(s, "negative") + 8;
+                                    String erInOneLine = s.substring(StringUtils.indexOfAny(s, Immuno.ER_KW), end)
+                                            .trim().replace("-", " - ").replace(" %", "%");
+                                    er = Immuno.parseER(erInOneLine);
+                                }
+                            }
+                            if (isERStart) {
+                                if (StringUtils.indexOfAny(s, Immuno.ER_END_KW) >= 0) {
+                                    isERStart = false;
+                                    erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
+                                }
+                                if (erSearchWindowSizeinLine < 0) {
+                                    isERStart = false;
+                                    erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
+                                }
+                            }
+                            if (isERStart) {
+                                erText += (s.trim().length() != 0) ? (s + "\n") : "";
+                                erSearchWindowSizeinLine--;
                             }
 
                             if (s.contains("METHOD")) {
@@ -221,7 +278,7 @@ public class Pathology {
                     pathologyList.put(pathologyID, p);
                     // </editor-fold>
 
-                    // <editor-fold defaultstate="collapsed" desc="analyse diagnoses of the Pathology">
+                    // <editor-fold defaultstate="collapsed" desc="diagnoses of the Pathology">
                     diagnosisText = StringUtils.replace(
                             StringUtils.replace(
                                     diagnosisText,
@@ -277,15 +334,31 @@ public class Pathology {
                     }
                     // </editor-fold>
 
-                    // <editor-fold defaultstate="collapsed" desc="analyse immunohistochemical of the Pathology">
+                    // <editor-fold defaultstate="collapsed" desc="immunohistochemical of the Pathology">
                     int immunoCount = StringUtils.countMatches(pathologyText, IMMUNO_KEYWORD);
-                    p.immuno = new Immuno(
-                            (immunoCount > 0)
-                                    ? StringUtils.replace(immunohistochemicalText,
-                                            "\"", // for spreadsheet
-                                            "'").trim()
-                                    : "-");
-                    p.immuno.ki67 = ki67;
+                    p.immuno.setImmunoText((immunoCount > 0)
+                            ? StringUtils.replace(immunohistochemicalText,
+                                    "\"", // for spreadsheet
+                                    "'").trim()
+                            : "-");
+                    p.immuno.setKi67(Immuno.parseKi67(ki67Text));
+                    p.immuno.setHER2(Immuno.parseHER2(her2Text));
+
+                    // ER in multiple lines
+                    if (er == Integer.MIN_VALUE && !erText.isEmpty()) {
+                        erText = "*****\n" + erText.replace("-", " - ").replace(" %", "%");
+
+                        DBG.accept("!!!!!" + p.pathologyID + "\t" + erText + "\n");
+                        assert (StringUtils.containsIgnoreCase(erText, "%")
+                                ? true
+                                : StringUtils.containsIgnoreCase(erText, "negative"));
+
+                        int end = erText.contains("%")
+                                ? erText.indexOf('%') + 1
+                                : StringUtils.indexOfIgnoreCase(erText, "negative") + 8;
+                        er = Immuno.parseER(erText.substring(StringUtils.indexOfAny(erText, Immuno.ER_KW), end));
+                    }
+                    p.immuno.setER(er);
                     // </editor-fold>
                 } // for each pathology
             }
@@ -441,31 +514,12 @@ public class Pathology {
         // </editor-fold>
     }
 
-    public static double parseKi67(String ki67Text) {
-        double ret = Double.MIN_VALUE;
-        Scanner fi = new Scanner(ki67Text);
-        fi.useDelimiter("[^\\p{Alnum},\\.-]");
-        while (true) {
-            if (fi.hasNextInt()) {
-                ret = fi.nextInt();
-            } else if (fi.hasNextDouble()) {
-                ret = fi.nextDouble();
-            } else if (fi.hasNext()) {
-                fi.next();
-            } else {
-                break;
-            }
-        }
-
-        return ret;
-    }
-
     final String patientID;
     final String patientName;
     final String pathologyID;
     final LocalDate biopsyDate;
     final List<Diagnosis> diagnosisList = new ArrayList<>(10);
-    Immuno immuno;
+    final Immuno immuno = new Immuno();
 
     public Pathology(String pid, String pName, String pathID, LocalDate date) {
         patientID = pid;

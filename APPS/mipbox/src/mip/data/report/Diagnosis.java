@@ -46,7 +46,9 @@ public class Diagnosis {
 
         sb.append((bmrLink != null) ? bmrLink.hospital : "-").append(",");
         sb.append((bmrLink != null) ? bmrLink.studyID : "-").append(",");
-        sb.append((bmrLink != null) ? bmrLink.scanDate : "-");
+        sb.append((bmrLink != null) ? bmrLink.scanDate : "-").append(",");
+
+        sb.append(pathologyLink.immuno);
 
         sb.append("\n");
         return sb.toString();
