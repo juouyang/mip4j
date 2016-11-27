@@ -16,7 +16,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static mip.util.DGBUtils.DBG;
 import mip.util.LogUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -109,7 +108,9 @@ public class Pathology {
                     int er = Integer.MIN_VALUE;
                     int pr = Integer.MIN_VALUE;
                     boolean isERStart = false;
-                    int erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
+                    boolean isPRStart = false;
+                    int erSearchWindowSizeinLine = Immuno.ER_SEARCHWIN;
+                    int prSearchWindowSizeinLine = Immuno.PR_SEARCHWIN;
 
                     Pathology p;
                     // <editor-fold defaultstate="collapsed" desc="parse a Pathology">
@@ -207,29 +208,79 @@ public class Pathology {
                             if (StringUtils.indexOfAny(s, Immuno.ER_KW) >= 0) {
                                 isERStart = true;
                                 // ER in one line
-                                if (er == Integer.MIN_VALUE && (s.contains("%")
-                                        || StringUtils.containsIgnoreCase(s, "negative"))) {
+                                boolean negativeOrPercent = s.contains("%")
+                                        || StringUtils.containsIgnoreCase(s,
+                                                "negative");
+                                if (er == Integer.MIN_VALUE && negativeOrPercent) {
+                                    int start = StringUtils.indexOfAny(s, Immuno.ER_KW);
                                     int end = s.contains("%")
                                             ? s.indexOf('%') + 1
                                             : StringUtils.indexOfIgnoreCase(s, "negative") + 8;
-                                    String erInOneLine = s.substring(StringUtils.indexOfAny(s, Immuno.ER_KW), end)
-                                            .trim().replace("-", " - ").replace(" %", "%");
-                                    er = Immuno.parseER(erInOneLine);
+                                    try {
+                                        String erInOneLine = s.substring(start, end)
+                                                .trim().replace("-", " - ").replace(" %", "%");
+                                        er = Immuno.parseER(erInOneLine);
+                                    } catch (StringIndexOutOfBoundsException e) {
+                                        LOG.log(Level.SEVERE,
+                                                "\t{0} erText\t{1}\n",
+                                                new Object[]{pathologyID, s});
+                                    }
                                 }
                             }
                             if (isERStart) {
                                 if (StringUtils.indexOfAny(s, Immuno.ER_END_KW) >= 0) {
                                     isERStart = false;
-                                    erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
+                                    erSearchWindowSizeinLine = Immuno.ER_SEARCHWIN;
                                 }
                                 if (erSearchWindowSizeinLine < 0) {
                                     isERStart = false;
-                                    erSearchWindowSizeinLine = Immuno.ER_SEARCH_WINDOW_SIZE;
+                                    erSearchWindowSizeinLine = Immuno.ER_SEARCHWIN;
                                 }
                             }
                             if (isERStart) {
                                 erText += (s.trim().length() != 0) ? (s + "\n") : "";
                                 erSearchWindowSizeinLine--;
+                            }
+
+                            // PR
+                            if (StringUtils.indexOfAny(s, Immuno.PR_KW) >= 0) {
+                                isPRStart = true;
+                                // PR in one line
+                                boolean negativeOrPercent = s.contains("%")
+                                        || StringUtils.containsIgnoreCase(s,
+                                                "negative");
+
+                                if (pr == Integer.MIN_VALUE && negativeOrPercent) {
+                                    int start = StringUtils.indexOfAny(s, Immuno.PR_KW);
+                                    String subLine = s.substring(start, s.length());
+                                    int end = subLine.contains("%")
+                                            ? subLine.indexOf('%') + 1
+                                            : StringUtils.indexOfIgnoreCase(subLine, "negative") + 8;
+                                    try {
+                                        String prInOneLine = subLine.substring(0, end)
+                                                .trim().replace("-", " - ").replace(" %", "%");
+                                        pr = Immuno.parsePR(prInOneLine);
+                                    } catch (StringIndexOutOfBoundsException e) {
+                                        LOG.log(Level.SEVERE,
+                                                "\t{0} prText\t{1}\n",
+                                                new Object[]{pathologyID, s});
+                                    }
+                                }
+                            }
+                            if (isPRStart) {
+                                if (StringUtils.indexOfAny(s, Immuno.PR_END_KEYWORDS) >= 0) {
+                                    isPRStart = false;
+                                    prSearchWindowSizeinLine = Immuno.PR_SEARCHWIN;
+                                }
+
+                                if (prSearchWindowSizeinLine < 0) {
+                                    isPRStart = false;
+                                    prSearchWindowSizeinLine = Immuno.PR_SEARCHWIN;
+                                }
+                            }
+                            if (isPRStart) {
+                                prText += (s.trim().length() != 0) ? (s + "\n") : "";
+                                prSearchWindowSizeinLine--;
                             }
 
                             if (s.contains("METHOD")) {
@@ -347,18 +398,44 @@ public class Pathology {
                     // ER in multiple lines
                     if (er == Integer.MIN_VALUE && !erText.isEmpty()) {
                         erText = "*****\n" + erText.replace("-", " - ").replace(" %", "%");
-
-                        DBG.accept("!!!!!" + p.pathologyID + "\t" + erText + "\n");
-                        assert (StringUtils.containsIgnoreCase(erText, "%")
+                        boolean negativeOrPercent
+                                = StringUtils.containsIgnoreCase(erText, "%")
                                 ? true
-                                : StringUtils.containsIgnoreCase(erText, "negative"));
+                                : StringUtils.containsIgnoreCase(
+                                        erText,
+                                        "negative");
+                        if (negativeOrPercent) {
+                            int end = erText.contains("%")
+                                    ? erText.indexOf('%') + 1
+                                    : StringUtils.indexOfIgnoreCase(erText, "negative") + 8;
+                            er = Immuno.parseER(erText.substring(StringUtils.indexOfAny(erText, Immuno.ER_KW), end));
+                        } else { // postive without percentage
+                            LOG.warning(erText.replace("\n", "\t"));
+                        }
 
-                        int end = erText.contains("%")
-                                ? erText.indexOf('%') + 1
-                                : StringUtils.indexOfIgnoreCase(erText, "negative") + 8;
-                        er = Immuno.parseER(erText.substring(StringUtils.indexOfAny(erText, Immuno.ER_KW), end));
                     }
                     p.immuno.setER(er);
+
+                    // PR in multiple lines
+                    if (pr == Integer.MIN_VALUE && !prText.isEmpty()) {
+                        prText = "*****\n" + prText.replace("-", " - ").replace(" %", "%");
+
+                        boolean negativeOrPercent
+                                = StringUtils.containsIgnoreCase(prText, "%")
+                                ? true
+                                : StringUtils.containsIgnoreCase(
+                                        prText,
+                                        "negative");
+                        if (negativeOrPercent) {
+                            int end = prText.contains("%")
+                                    ? prText.indexOf('%') + 1
+                                    : StringUtils.indexOfIgnoreCase(prText, "negative") + 8;
+                            pr = Immuno.parsePR(prText.substring(StringUtils.indexOfAny(prText, Immuno.PR_KW), end));
+                        } else { // postive without percentage
+                            LOG.warning(prText.replace("\n", "\t"));
+                        }
+                    }
+                    p.immuno.setPR(pr);
                     // </editor-fold>
                 } // for each pathology
             }

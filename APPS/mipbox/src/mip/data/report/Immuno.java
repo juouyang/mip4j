@@ -15,11 +15,32 @@ import org.apache.commons.lang3.StringUtils;
 public class Immuno {
 
     static final String[] HER2_KW = new String[]{"HER2", "HER-2", "HER-2/neu"};
-    static final String[] ER_KW = new String[]{"Estrogen Receptor", "ESTROGEN RECEPTOR", "(ER)"};
-    static final String[] ER_END_KW = new String[]{"Progesterone Receptor", "PROGESTERONE RECEPTOR", "(PgR)", "HER2", "HER-2", "HER-2/neu", "Ki-67"};
-    static final String[] PR_KEYWORDS = new String[]{"Progesterone Receptor", "PROGESTERONE RECEPTOR", "(PgR)"};
-    static final String[] PR_END_KEYWORDS = new String[]{"Estrogen Receptor", "ESTROGEN RECEPTOR", "(ER)", "HER2", "HER-2", "HER-2/neu", "Ki-67"};
-    static final int ER_SEARCH_WINDOW_SIZE = 3;
+    static final String[] ER_KW = new String[]{
+        "Estrogen Receptor",
+        "ESTROGEN RECEPTOR",
+        "(ER)"};
+    static final String[] ER_END_KW = new String[]{
+        "Progesterone Receptor",
+        "PROGESTERONE RECEPTOR",
+        "(PgR)",
+        "HER2",
+        "HER-2",
+        "HER-2/neu",
+        "Ki-67"};
+    static final String[] PR_KW = new String[]{
+        "Progesterone Receptor",
+        "PROGESTERONE RECEPTOR",
+        "(PgR)"};
+    static final String[] PR_END_KEYWORDS = new String[]{
+        "Estrogen Receptor",
+        "ESTROGEN RECEPTOR",
+        "(ER)",
+        "HER2",
+        "HER-2",
+        "HER-2/neu",
+        "Ki-67"};
+    static final int ER_SEARCHWIN = 3;
+    static final int PR_SEARCHWIN = 3;
 
     public static int parseER(String erText) {
         int ret = Integer.MIN_VALUE;
@@ -28,22 +49,18 @@ public class Immuno {
         while (true) {
             if (fi.hasNextInt()) {
                 ret = fi.nextInt();
-                //DBG.accept("\tInt: " + er + "\n");
             } else if (fi.hasNextDouble()) {
                 ret = (int) fi.nextDouble();
-                //DBG.accept("\tDouble: " + er + "\n");
             } else if (fi.hasNext()) {
                 String tmp = fi.next();
                 if (StringUtils.containsIgnoreCase(tmp, "negative")) {
                     ret = 0;
                 }
-                //DBG.accept("\tWord: " + tmp + "\n");
             } else {
                 break;
             }
         }
         if (ret == 1) {
-            //DBG.accept("\t" + erText + "\n----\n");
             if (erText.contains(">=1")) {
                 ret = Integer.MIN_VALUE;
             }
@@ -62,22 +79,18 @@ public class Immuno {
         while (true) {
             if (fi.hasNextInt()) {
                 ret = fi.nextInt();
-                //DBG.accept("\tInt: " + er + "\n");
             } else if (fi.hasNextDouble()) {
                 ret = (int) fi.nextDouble();
-                //DBG.accept("\tDouble: " + er + "\n");
             } else if (fi.hasNext()) {
                 String tmp = fi.next();
                 if (StringUtils.containsIgnoreCase(tmp, "negative")) {
                     ret = 0;
                 }
-                //DBG.accept("\tWord: " + tmp + "\n");
             } else {
                 break;
             }
         }
         if (ret == 1) {
-            //DBG.accept("\t" + prText + "\n--\n");
             if (prText.contains(">=1")) {
                 ret = Integer.MIN_VALUE;
             }
@@ -127,21 +140,26 @@ public class Immuno {
         return ret;
     }
 
-    private String immunoText;
-    private double ki67 = Double.MIN_VALUE;
-    private int her2 = Integer.MIN_VALUE;
     private int er = Integer.MIN_VALUE;
+    private int pr = Integer.MIN_VALUE;
+    private int her2 = Integer.MIN_VALUE;
+    private double ki67 = Double.MIN_VALUE;
+    private String immunoText;
 
-    void setKi67(double ki67) {
-        this.ki67 = ki67;
+    void setER(int er) {
+        this.er = er;
+    }
+
+    void setPR(int pr) {
+        this.pr = pr;
     }
 
     void setHER2(int her2) {
         this.her2 = her2;
     }
 
-    void setER(int er) {
-        this.er = er;
+    void setKi67(double ki67) {
+        this.ki67 = ki67;
     }
 
     void setImmunoText(String immunoText) {
@@ -153,6 +171,7 @@ public class Immuno {
         StringBuilder sb = new StringBuilder(64);
 
         sb.append(er == Integer.MIN_VALUE ? "-" : er).append(",");
+        sb.append(pr == Integer.MIN_VALUE ? "-" : pr).append(",");
         sb.append(her2 == Integer.MIN_VALUE ? "-" : her2).append(",");
         sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67).append(",");
         sb.append("\"").append(immunoText).append("\"");
