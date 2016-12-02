@@ -166,15 +166,13 @@ public class Immuno {
         this.immunoText = immunoText;
     }
 
-    @Override
-    public String toString() {
+    public String toCSVString() {
         StringBuilder sb = new StringBuilder(64);
 
         sb.append(er == Integer.MIN_VALUE ? "-" : er).append(",");
         sb.append(pr == Integer.MIN_VALUE ? "-" : pr).append(",");
         sb.append(her2 == Integer.MIN_VALUE ? "-" : her2).append(",");
-        sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67).append(",");
-        sb.append("\"").append(immunoText).append("\"");
+        sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67);
 
         return sb.toString();
     }

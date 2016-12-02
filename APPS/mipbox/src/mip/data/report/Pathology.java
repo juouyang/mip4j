@@ -31,7 +31,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Pathology {
 
-    private static final String DATA_ROOT = "/home/ju/Dropbox/";
+    private static final String DATA_ROOT = "D:/Dropbox/";
     private static final Base64.Decoder DECODER = Base64.getDecoder();
     private static final String DF = "yyyy-MM-dd";
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern(DF);
@@ -457,7 +457,7 @@ public class Pathology {
             int sumUnknownBiopsy = 0;
 
             for (Pathology p : pathologyList.values()) {
-                allPathology.append(p);
+                allPathology.append(p.toCSVString());
 
                 for (Diagnosis d : p.diagnosisList) {
                     sumLeft += d.side == Side.LEFT ? 1 : 0;
@@ -502,6 +502,7 @@ public class Pathology {
             LOG.log(Level.FINE, "\t{0} excision", sumExcision);
             LOG.log(Level.FINE, "\t{0} unknown type fo biopsy\n", sumUnknownBiopsy);
         }
+        // </editor-fold>
 
         StringBuilder mrOneSideSingleDiagnosis = new StringBuilder(4096);
         {
@@ -531,11 +532,11 @@ public class Pathology {
                 assert (ld == 1 || rd == 1);
 
                 if (ld == 1) {
-                    mrOneSideSingleDiagnosis.append(bmr.leftDiagnosisList.get(0).toString());
+                    mrOneSideSingleDiagnosis.append(bmr.leftDiagnosisList.get(0).toCSVString()).append("\n");
                 }
 
                 if (rd == 1) {
-                    mrOneSideSingleDiagnosis.append(bmr.rightDiagnosisList.get(0).toString());
+                    mrOneSideSingleDiagnosis.append(bmr.rightDiagnosisList.get(0).toCSVString()).append("\n");
                 }
             }
             FileUtils.writeStringToFile(new File(DATA_ROOT + "MR_SINGLE_DIAGNOSIS.csv"), mrOneSideSingleDiagnosis.toString());
@@ -588,7 +589,6 @@ public class Pathology {
             LOG.log(Level.FINE, "\t{0} left and right diagnosis", bmrBothSideOneDiagnosis);
             LOG.log(Level.FINE, "\t{0} ignored diagnosis", bmrMixedDiagnoses);
         }
-        // </editor-fold>
     }
 
     final String patientID;
@@ -605,27 +605,11 @@ public class Pathology {
         biopsyDate = date;
     }
 
-    @Override
-    public String toString() {
+    public String toCSVString() {
         StringBuilder sb = new StringBuilder(64);
 
         for (Diagnosis d : diagnosisList) {
-            sb.append("\"'").append(patientID).append("\"").append(",");
-            sb.append("\"'").append(patientName).append("\"").append(",");
-            sb.append(biopsyDate).append(",");
-            sb.append(d.region).append(",");
-            sb.append(d.side).append(",");
-            sb.append(d.biopsyType).append(",");
-            sb.append(d.cancerType).append(",");
-            sb.append("\"").append(d.diagnosisText).append("\"").append(",");
-            sb.append(pathologyID).append(",");
-
-            sb.append((d.bmrLink != null) ? d.bmrLink.hospital : "-").append(",");
-            sb.append((d.bmrLink != null) ? d.bmrLink.studyID : "-").append(",");
-            sb.append((d.bmrLink != null) ? d.bmrLink.scanDate : "-").append(",");
-
-            sb.append(immuno);
-
+            sb.append(d.toCSVString());
             sb.append("\n");
         }
         return sb.toString();
