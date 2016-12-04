@@ -140,11 +140,11 @@ public class Immuno {
         return ret;
     }
 
-    private int er = Integer.MIN_VALUE;
-    private int pr = Integer.MIN_VALUE;
-    private int her2 = Integer.MIN_VALUE;
-    private double ki67 = Double.MIN_VALUE;
-    private String immunoText;
+    int er = Integer.MIN_VALUE;
+    int pr = Integer.MIN_VALUE;
+    int her2 = Integer.MIN_VALUE;
+    double ki67 = Double.MIN_VALUE;
+    String text;
 
     void setER(int er) {
         this.er = er;
@@ -163,18 +163,17 @@ public class Immuno {
     }
 
     void setImmunoText(String immunoText) {
-        this.immunoText = immunoText;
+        this.text = immunoText;
     }
 
     public String toCSVString() {
         StringBuilder sb = new StringBuilder(64);
 
-        sb.append(er == Integer.MIN_VALUE ? "-" : er).append(",");
-        sb.append(pr == Integer.MIN_VALUE ? "-" : pr).append(",");
         sb.append(her2 == Integer.MIN_VALUE ? "-" : her2).append(",");
-        sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67);
+        sb.append(ki67 == Double.MIN_VALUE ? "-" : ki67).append(",");
+        sb.append(er == Integer.MIN_VALUE ? "-" : er).append(",");
+        sb.append(pr == Integer.MIN_VALUE ? "-" : pr);
 
         return sb.toString();
     }
-
 }

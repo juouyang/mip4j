@@ -5,47 +5,52 @@
  */
 package mip.data.report;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  *
  * @author ju
  */
-public class Diagnosis {
+public class Diagnosis implements Comparable<Diagnosis> {
+
+    public static void parse(Pathology p, String text) {
+        String diagnosisText = StringUtils.replace(
+                StringUtils.replace(
+                        text,
+                        "\"", // for spreadsheet
+                        "'"
+                ).trim(),
+                "病理診斷：", // remove title
+                "");
+
+        for (final String s : diagnosisText.split("\n")) {
+            Diagnosis d = new Diagnosis(p, s);
+            p.diagnosisList.add(d);
+        }
+    }
 
     final Region region;
     final Side side;
     final Biopsy biopsyType;
     final CancerType cancerType;
-    final String diagnosisText;
-    Pathology pathologyLink = null;
+    final String text;
+    final Pathology pathologyLink;
     BMR bmrLink = null;
 
-    Diagnosis(String s) {
+    private Diagnosis(Pathology p, String s) {
         region = Region.fromString(s);
         side = Side.fromString(s);
         biopsyType = Biopsy.fromString(s);
         cancerType = CancerType.fromString(s);
-        diagnosisText = s;
+        text = s;
+        pathologyLink = p;
     }
 
-    public String toCSVString() {
-        if (!pathologyLink.diagnosisList.contains(this)) {
-            throw new IllegalArgumentException();
-        }
-        StringBuilder sb = new StringBuilder(64);
-
-        sb.append("\"'").append(pathologyLink.patientID).append("\"").append(",");
-        sb.append(pathologyLink.biopsyDate).append(",");
-        sb.append(region).append(",");
-        sb.append(side).append(",");
-        sb.append(cancerType).append(",");
-
-        sb.append((bmrLink != null) ? bmrLink.hospital : "-").append(",");
-        sb.append((bmrLink != null) ? bmrLink.studyID : "-").append(",");
-        sb.append((bmrLink != null) ? bmrLink.scanDate : "-").append(",");
-
-        sb.append(pathologyLink.immuno.toCSVString());
-
-        return sb.toString();
+    @Override
+    public int compareTo(Diagnosis d) {
+        int pid = pathologyLink.patientID.compareTo(d.pathologyLink.patientID);
+        int sid = Integer.parseInt(bmrLink.studyID) - Integer.parseInt(d.bmrLink.studyID);
+        int s = this.side.compareTo(d.side);
+        return (pid != 0) ? pid : (sid != 0) ? sid : s;
     }
-
 }

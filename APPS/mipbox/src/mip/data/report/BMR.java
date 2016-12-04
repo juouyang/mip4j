@@ -54,6 +54,7 @@ public class BMR implements Comparable<BMR> {
         return null;
     }
 
+    String patientID;
     String hospital;
     String studyID;
     LocalDate scanDate;
@@ -62,6 +63,10 @@ public class BMR implements Comparable<BMR> {
     final List<Diagnosis> leftMixedDiagnosisList = new ArrayList<>(8);
     final List<Diagnosis> rightMixedDiagnosisList = new ArrayList<>(8);
     final List<Diagnosis> duplicateTypeDiagnosisList = new ArrayList<>(8);
+
+    public BMR(String pid) {
+        patientID = pid;
+    }
 
     private void _merge(Diagnosis keep, boolean ignoredBenign) {
         assert (keep != null && keep.side != Side.UNKNOWN);
@@ -131,6 +136,11 @@ public class BMR implements Comparable<BMR> {
         sb.append(ArrayUtils.toString(rightDiagnosisList.toArray())).append("\n");
         sb.append(ArrayUtils.toString(leftMixedDiagnosisList.toArray())).append("\n");
         sb.append(ArrayUtils.toString(rightMixedDiagnosisList.toArray())).append("\n");
+        return sb.toString();
+    }
+
+    String toCSVString() {
+        StringBuilder sb = new StringBuilder(64);
         return sb.toString();
     }
 
