@@ -29,12 +29,12 @@ public class Diagnosis implements Comparable<Diagnosis> {
         }
     }
 
-    final Region region;
-    final Side side;
-    final Biopsy biopsyType;
-    final CancerType cancerType;
-    final String text;
-    final Pathology pathologyLink;
+    public final Region region;
+    public final Side side;
+    public final Biopsy biopsyType;
+    public final CancerType cancerType;
+    public final String text;
+    public final Pathology pathologyLink;
     BMR bmrLink = null;
 
     private Diagnosis(Pathology p, String s) {

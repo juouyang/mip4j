@@ -92,11 +92,11 @@ public class Pathology {
 
     public String hospital;
     public final String patientID;
-    final String pathologyID;
-    final LocalDate pathologyDate;
-    final List<Diagnosis> diagnosisList = new ArrayList<>(10);
+    public final String pathologyID;
+    public final LocalDate pathologyDate;
+    public final List<Diagnosis> diagnosisList = new ArrayList<>(10);
     public final Immuno immuno = new Immuno();
-    final String text;
+    public final String text;
 
     public Pathology(String pid, String text) {
         String[] lines = text.replace("\r", "").split("\n");

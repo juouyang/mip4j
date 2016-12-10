@@ -11,13 +11,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 import mip.data.report.BMR;
+import mip.data.report.Diagnosis;
 import mip.data.report.Pathology;
 import static mip.data.report.Pathology.DT;
 import org.apache.commons.io.FileUtils;
@@ -113,175 +112,40 @@ public class PathologyParser {
 
         StringBuilder csv = new StringBuilder(4096);
         for (String pid : pList.keySet()) {
-            csv.append(",");
-            csv.append(pList.get(pid)).append(",");
-            csv.append("'").append(pid).append(",");
+            csv.append(pList.get(pid)).append(",");     // hospital
+            csv.append("'").append(pid).append(",");    // patient ID
 
-            csv.append(",");
-            csv.append(",");
+            if (pathologyList.get(pid) != null) {
+                // diagnosis source text
+                csv.append("\"");
+                for (Pathology p : pathologyList.get(pid)) {
+                    for (Diagnosis d : p.diagnosisList) {
+                        csv.append(d.text);
+                        csv.append("\n--------------------------------\n");
+                    }
+                }
+                csv.append("\"").append(",");
 
-            if (pathologyList.get(pid) == null) {
-                csv.append(",");
-                csv.append(",");
-                csv.append(",");
-                csv.append(",");
+                // immunohistochemical source text
+                csv.append("\"");
+                for (Pathology p : pathologyList.get(pid)) {
+                    csv.append(p.immuno.text);
+                    csv.append("\n--------------------------------\n");
+                }
+                csv.append("\"").append(",");
+
+                // pathology source text
+                csv.append("\"");
+                for (Pathology p : pathologyList.get(pid)) {
+                    csv.append(p.text);
+                    csv.append("\n--------------------------------\n");
+                }
+                csv.append("\"").append(",");
+
             } else {
-                {
-                    Set<Pathology> s = pathologyList.get(pid);
-                    Set<Integer> v = new HashSet<>(2);
-                    for (Pathology p : s) {
-                        int her2 = p.immuno.her2;
-                        if (her2 == Integer.MIN_VALUE || v.contains(her2)) {
-                            continue;
-                        }
-                        v.add(her2);
-                    }
-                    int max = Integer.MIN_VALUE;
-                    int min = Integer.MAX_VALUE;
-                    int sum = 0;
-                    for (int her2 : v) {
-                        if (her2 > max) {
-                            max = her2;
-                        }
-                        if (her2 < min) {
-                            min = her2;
-                        }
-                        sum += her2;
-                    }
-
-                    if (max == 3 && min != 3) {
-//                    csv.append("=");int c = 0;
-//                    for (double her2 : v) {
-//                        csv.append("\"").append(her2).append("\"");c++;
-//                        if (c != v.size()) csv.append("&CHAR(10)&");
-//                    }
-                        csv.append(Math.ceil(sum / (double) v.size()));
-                    } else if (max != Integer.MIN_VALUE) {
-                        csv.append(max);
-                    } else {
-                        csv.append("-");
-                    }
-                }
-                csv.append(",");
-                {
-                    Set<Pathology> s = pathologyList.get(pid);
-                    Set<Double> v = new HashSet<>(2);
-                    for (Pathology p : s) {
-                        double ki67 = p.immuno.ki67;
-                        if (ki67 == Double.MIN_VALUE || v.contains(ki67)) {
-                            continue;
-                        }
-                        v.add(ki67);
-                    }
-                    double max = Double.MIN_VALUE;
-                    double min = Double.MAX_VALUE;
-                    double sum = 0;
-                    for (double ki67 : v) {
-                        if (ki67 > max) {
-                            max = ki67;
-                        }
-                        if (ki67 < min) {
-                            min = ki67;
-                        }
-                        sum += ki67;
-                    }
-                    if (max >= 14 && min <= 14 && max != min) {
-//                    csv.append("=");int c = 0;
-//                    for (double ki67 : v) {
-//                        csv.append("\"").append(ki67).append("\"");c++;
-//                        if (c != v.size()) csv.append("&CHAR(10)&");
-//                    }
-                        csv.append(Math.ceil(sum / v.size()));
-                    } else if (max != Double.MIN_VALUE) {
-                        csv.append(max);
-                    } else {
-                        csv.append("-");
-                    }
-                }
-                csv.append(",");
-                {
-                    Set<Pathology> s = pathologyList.get(pid);
-                    Set<Integer> v = new HashSet<>(2);
-                    for (Pathology p : s) {
-                        int er = p.immuno.er;
-                        if (er == Integer.MIN_VALUE || v.contains(er)) {
-                            continue;
-                        }
-                        v.add(er);
-                    }
-                    int max = Integer.MIN_VALUE;
-                    int min = Integer.MAX_VALUE;
-                    int sum = 0;
-                    for (int er : v) {
-                        if (er > max) {
-                            max = er;
-                        }
-                        if (er < min) {
-                            min = er;
-                        }
-                        sum += er;
-                    }
-
-                    if (max >= 10 && min <= 10 && max != min) {
-//                    csv.append("=");int c = 0;
-//                    for (int er : v) {
-//                        csv.append("\"").append(er).append("\"");c++;
-//                        if (c != v.size()) csv.append("&CHAR(10)&");
-//                    }
-                        csv.append(Math.ceil(sum / (double) v.size()));
-                    } else if (max != Integer.MIN_VALUE) {
-                        csv.append(max);
-                    } else {
-                        csv.append("-");
-                    }
-                }
-                csv.append(",");
-                {
-                    Set<Pathology> s = pathologyList.get(pid);
-                    Set<Integer> v = new HashSet<>(2);
-                    for (Pathology p : s) {
-                        int pr = p.immuno.pr;
-                        if (pr == Integer.MIN_VALUE || v.contains(pr)) {
-                            continue;
-                        }
-                        v.add(pr);
-                    }
-                    int max = Integer.MIN_VALUE;
-                    int min = Integer.MAX_VALUE;
-                    int sum = 0;
-                    for (int er : v) {
-                        if (er > max) {
-                            max = er;
-                        }
-                        if (er < min) {
-                            min = er;
-                        }
-                        sum += er;
-                    }
-                    if (max >= 10 && min <= 10 && max != min) {
-//                    csv.append("=");int c = 0;
-//                    for (int pr : v) {
-//                        csv.append("\"").append(pr).append("\"");c++;
-//                        if (c != v.size()) csv.append("&CHAR(10)&");
-//                    }
-                        csv.append(Math.ceil(sum / (double) v.size()));
-                    } else if (max != Integer.MIN_VALUE) {
-                        csv.append(max);
-                    } else {
-                        csv.append("-");
-                    }
-                }
+                csv.append(",").append(",").append(",");
             }
 
-//            csv.append(",");
-            // immunohistochemical source text
-//            csv.append("\"");
-//            for (Pathology p : pathologyList.get(pid)) csv.append(p.immuno.text);
-//            csv.append("\"").append(",");
-            // pathology source text
-//            csv.append("\"");
-//            for (Pathology p : pathologyList.get(pid)) csv.append(p.text);
-//            csv.append("\"").append(",");
             csv.append("\n");
         }
         FileUtils.writeStringToFile(new File(DATA_ROOT + "PATHOLOGY.csv"), csv.toString());
