@@ -16,7 +16,7 @@ import mip.util.IOUtils;
  *
  * @author ju
  */
-public class FOO {
+public class KCVFromROIZIPFileName {
 
     private static final String ROOT = "W:/_BREAST_MRI/TMUH";
 

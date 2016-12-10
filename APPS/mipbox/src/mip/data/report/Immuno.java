@@ -140,11 +140,11 @@ public class Immuno {
         return ret;
     }
 
-    int er = Integer.MIN_VALUE;
-    int pr = Integer.MIN_VALUE;
-    int her2 = Integer.MIN_VALUE;
-    double ki67 = Double.MIN_VALUE;
-    String text;
+    public int er = Integer.MIN_VALUE;
+    public int pr = Integer.MIN_VALUE;
+    public int her2 = Integer.MIN_VALUE;
+    public double ki67 = Double.MIN_VALUE;
+    public String text;
 
     void setER(int er) {
         this.er = er;

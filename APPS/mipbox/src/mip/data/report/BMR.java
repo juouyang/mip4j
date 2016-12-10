@@ -54,10 +54,10 @@ public class BMR implements Comparable<BMR> {
         return null;
     }
 
-    String patientID;
-    String hospital;
-    String studyID;
-    LocalDate scanDate;
+    public String patientID;
+    public String hospital;
+    public String studyID;
+    public LocalDate scanDate;
     final List<Diagnosis> leftDiagnosisList = new ArrayList<>(8);
     final List<Diagnosis> rightDiagnosisList = new ArrayList<>(8);
     final List<Diagnosis> leftMixedDiagnosisList = new ArrayList<>(8);
