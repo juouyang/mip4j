@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author ju
  */
 public enum CancerType {
-    UNKNOWN("unknown", null),
+    UNKNOWN("Unknown", null),
     IDC("IDC", new String[]{
         " invasive carcinoma",
         "mucinous carcinoma",
@@ -31,11 +31,15 @@ public enum CancerType {
         "no metastasis",
         "no residual carcinoma",
         "no tumor involve",
+        "negative for metastasis",
         "negative for carcinoma",
         "fibroadenoma",
         "fibrocystic change",
         "fat necrosis"}),
-    MIXED("mixed", null);
+    MIXED("mixed", null),
+    HER2("HER2", null),
+    IGNORED("Ignored", null),
+    IMMUNO("Immuno", null);
 
     private final String description;
     final String[] keywords;

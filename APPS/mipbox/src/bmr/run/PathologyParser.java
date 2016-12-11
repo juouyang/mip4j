@@ -15,10 +15,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 import mip.data.report.BMR;
 import mip.data.report.Diagnosis;
 import mip.data.report.Pathology;
 import static mip.data.report.Pathology.DT;
+import mip.util.LogUtils;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -27,8 +29,17 @@ import org.apache.commons.io.FileUtils;
  */
 public class PathologyParser {
 
-    private static final String DATA_ROOT = "/home/ju/Dropbox/";
+    private static final String DATA_ROOT;
     private static final Base64.Decoder DECODER = Base64.getDecoder();
+    private static final Logger LOG = LogUtils.LOGGER;
+
+    static {
+        if (System.getProperty("os.name").contains("Windows")) {
+            DATA_ROOT = "D:/Dropbox/";
+        } else {
+            DATA_ROOT = "/home/ju/Dropbox/";
+        }
+    }
 
     public static void main(String[] args) throws IOException {
         Map<String, String> pList = new LinkedHashMap<>(341);
@@ -115,11 +126,32 @@ public class PathologyParser {
             csv.append(pList.get(pid)).append(",");     // hospital
             csv.append("'").append(pid).append(",");    // patient ID
 
-            if (pathologyList.get(pid) != null) {
+            final LinkedHashSet<Pathology> ps = pathologyList.get(pid);
+            if (ps != null) {
+                // diagnosis
+                csv.append("\"");
+                for (Pathology p : ps) {
+                    for (Diagnosis d : p.diagnosisList) {
+                        if (d.text.equals("-")) {
+                            continue;
+                        }
+                        csv.append("[").append(p.pathologyID).append("],");
+                        csv.append(d.region).append(",");
+                        csv.append(d.side).append(",");
+                        csv.append(d.cancerType);
+                        csv.append("\n--------------------------------\n");
+                    }
+                }
+                csv.append("\"").append(",");
+
                 // diagnosis source text
                 csv.append("\"");
-                for (Pathology p : pathologyList.get(pid)) {
+                for (Pathology p : ps) {
                     for (Diagnosis d : p.diagnosisList) {
+                        if (d.text.equals("-")) {
+                            continue;
+                        }
+                        csv.append("[").append(p.pathologyID).append("]\t");
                         csv.append(d.text);
                         csv.append("\n--------------------------------\n");
                     }
@@ -128,7 +160,11 @@ public class PathologyParser {
 
                 // immunohistochemical source text
                 csv.append("\"");
-                for (Pathology p : pathologyList.get(pid)) {
+                for (Pathology p : ps) {
+                    if (p.immuno.text.equals("-")) {
+                        continue;
+                    }
+                    csv.append("[").append(p.pathologyID).append("]\n");
                     csv.append(p.immuno.text);
                     csv.append("\n--------------------------------\n");
                 }
@@ -136,7 +172,10 @@ public class PathologyParser {
 
                 // pathology source text
                 csv.append("\"");
-                for (Pathology p : pathologyList.get(pid)) {
+                for (Pathology p : ps) {
+                    if (p.text.equals("-")) {
+                        continue;
+                    }
                     csv.append(p.text);
                     csv.append("\n--------------------------------\n");
                 }

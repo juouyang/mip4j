@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author ju
  */
 public enum Side {
-    UNKNOWN("Unknown"), LEFT("Left"), RIGHT("Right"), MIXED("Mixed");
+    UNKNOWN("Unknown"), LEFT("Left"), RIGHT("Right"), MIXED("Mixed"), IGNORED("Ignored");
     private final String description;
 
     private Side(String s) {

@@ -70,14 +70,14 @@ public class Pathology {
                 + sumMixedType
                 + sumUnknownType + sumBenignNotBreast;
         long sumBiopsyType = sumNeedle + sumExcision + sumUnknownBiopsy;
-        assert (sumSide == sumCancerType && sumSide == sumBiopsyType);
+        //assert (sumSide == sumCancerType && sumSide == sumBiopsyType);
         LOG.log(Level.FINE, "{0} patients", pList.size());
-        LOG.log(Level.FINE, "{0} pathology reports", pathologyList.size());
+        LOG.log(Level.FINE, "{0} patients with pathology", pathologyList.size());
         LOG.log(Level.FINE, "{0} diagnoses are within these reports.\n", sumSide);
         //
         LOG.log(Level.FINE, "\t{0} left diagnoses", sumLeft);
         LOG.log(Level.FINE, "\t{0} right diagnoses", sumRight);
-        LOG.log(Level.FINE, "\t{0} diagnoses with unknown side\n", sumUnknownSide);
+        //LOG.log(Level.FINE, "\t{0} diagnoses with unknown side\n", sumUnknownSide);
         //
         LOG.log(Level.FINE, "\t{0} benign", sumBenignBreast);
         LOG.log(Level.FINE, "\t{0} IDC", sumIDC);
@@ -385,6 +385,61 @@ public class Pathology {
             }
         }
         immuno.setPR(pr);
+
+        if (immunoCount > 0) {
+            for (Diagnosis d : diagnosisList) {
+                if (!d.pathologyLink.pathologyID.equals(pathologyID)) {
+                    continue;
+                }
+                if (d.region == Region.UNKNOWN) {
+                    d.region = Region.BREAST;
+                }
+            }
+        }
+
+        for (Diagnosis d : diagnosisList) {
+            if (d.text.contains("HER")) {
+
+                if ((StringUtils.containsIgnoreCase(d.text, "not amplified")
+                        || StringUtils.containsIgnoreCase(d.text, "Indeterminate"))) {
+                    if (d.region == Region.UNKNOWN) {
+                        d.region = Region.BREAST;
+                    }
+                    if (d.side == Side.UNKNOWN) {
+                        d.side = Side.IGNORED;
+                    }
+                    if (d.cancerType == CancerType.UNKNOWN) {
+                        d.cancerType = CancerType.HER2;
+                    }
+                } else if (StringUtils.containsIgnoreCase(d.text, "is amplified")) {
+                    if (d.region == Region.UNKNOWN) {
+                        d.region = Region.BREAST;
+                    }
+                    if (d.side == Side.UNKNOWN) {
+                        d.side = Side.IGNORED;
+                    }
+                    if (d.cancerType == CancerType.UNKNOWN) {
+                        d.cancerType = CancerType.IGNORED;
+                    }
+                }
+            }
+
+            if (StringUtils.containsIgnoreCase(d.text, "additional")
+                    && StringUtils.containsIgnoreCase(d.text, "report")) {
+                if (d.region == Region.BREAST) {
+                    d.cancerType = CancerType.IMMUNO;
+                    d.side = Side.IGNORED;
+                }
+            }
+
+            if (d.region == Region.UTERUS
+                    || d.region == Region.STOMACH
+                    || d.region == Region.ANUS
+                    || d.region == Region.ORAL) {
+                d.cancerType = CancerType.IGNORED;
+                d.side = Side.IGNORED;
+            }
+        }
     }
 
     public String toCSVString() {

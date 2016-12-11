@@ -29,10 +29,10 @@ public class Diagnosis implements Comparable<Diagnosis> {
         }
     }
 
-    public final Region region;
-    public final Side side;
+    public Region region;
+    public Side side;
     public final Biopsy biopsyType;
-    public final CancerType cancerType;
+    public CancerType cancerType;
     public final String text;
     public final Pathology pathologyLink;
     BMR bmrLink = null;
@@ -40,6 +40,9 @@ public class Diagnosis implements Comparable<Diagnosis> {
     private Diagnosis(Pathology p, String s) {
         region = Region.fromString(s);
         side = Side.fromString(s);
+        if (region == Region.UTERUS || region == Region.STOMACH) {
+            side = Side.IGNORED;
+        }
         biopsyType = Biopsy.fromString(s);
         cancerType = CancerType.fromString(s);
         text = s;
