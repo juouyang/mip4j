@@ -397,7 +397,7 @@ public class Pathology {
             }
         }
 
-        Side s;
+        // find side of unknown using diagnoses in the same pathology
         boolean hasUnknownSide = false;
         boolean hasLeft = false;
         boolean hasRight = false;
@@ -440,6 +440,8 @@ public class Pathology {
                 }
             }
         }
+        
+        //TODO: merge diagnoses by biopsyDate
     }
 
     public String toCSVString() {

@@ -169,6 +169,15 @@ public enum CancerType {
                 }
             }
         }
+
+        if (ret == CancerType.TBD) {
+            if (hasIDC && hasDCIS) {
+                ret = CancerType.MALIGNANT;
+            } else if (hasBenign) {
+                ret = hasIDC ? CancerType.IDC : CancerType.DCIS;
+            }
+        }
+
         return ret;
     }
 }

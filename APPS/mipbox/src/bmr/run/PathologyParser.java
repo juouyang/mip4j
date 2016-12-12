@@ -158,6 +158,11 @@ public class PathologyParser {
                         if (d.text.equals("-")) {
                             continue;
                         }
+
+                        if (d.cancerType == CancerType.IGNORED || d.region == Region.IGNORED || d.side == Side.IGNORED) {
+                            continue;
+                        }
+
                         csv.append("[").append(p.pathologyID).append("],");
                         csv.append(d.region).append(",");
                         csv.append(d.side).append(",");
