@@ -56,7 +56,7 @@ public class Pathology {
                     sumBenignNotBreast += d.cancerType == CancerType.BENIGN && d.region != Region.BREAST ? 1 : 0;
                     sumIDC += d.cancerType == CancerType.IDC ? 1 : 0;
                     sumDCIS += d.cancerType == CancerType.DCIS ? 1 : 0;
-                    sumMixedType += d.cancerType == CancerType.MIXED ? 1 : 0;
+                    sumMixedType += d.cancerType == CancerType.TBD ? 1 : 0;
                     sumUnknownType += d.cancerType == CancerType.UNKNOWN ? 1 : 0;
                     //
                     sumNeedle += d.biopsyType == Biopsy.NEEDLE ? 1 : 0;
@@ -394,50 +394,6 @@ public class Pathology {
                 if (d.region == Region.UNKNOWN) {
                     d.region = Region.BREAST;
                 }
-            }
-        }
-
-        for (Diagnosis d : diagnosisList) {
-            if (d.text.contains("HER")) {
-
-                if ((StringUtils.containsIgnoreCase(d.text, "not amplified")
-                        || StringUtils.containsIgnoreCase(d.text, "Indeterminate"))) {
-                    if (d.region == Region.UNKNOWN) {
-                        d.region = Region.BREAST;
-                    }
-                    if (d.side == Side.UNKNOWN) {
-                        d.side = Side.IGNORED;
-                    }
-                    if (d.cancerType == CancerType.UNKNOWN) {
-                        d.cancerType = CancerType.HER2;
-                    }
-                } else if (StringUtils.containsIgnoreCase(d.text, "is amplified")) {
-                    if (d.region == Region.UNKNOWN) {
-                        d.region = Region.BREAST;
-                    }
-                    if (d.side == Side.UNKNOWN) {
-                        d.side = Side.IGNORED;
-                    }
-                    if (d.cancerType == CancerType.UNKNOWN) {
-                        d.cancerType = CancerType.IGNORED;
-                    }
-                }
-            }
-
-            if (StringUtils.containsIgnoreCase(d.text, "additional")
-                    && StringUtils.containsIgnoreCase(d.text, "report")) {
-                if (d.region == Region.BREAST) {
-                    d.cancerType = CancerType.IMMUNO;
-                    d.side = Side.IGNORED;
-                }
-            }
-
-            if (d.region == Region.UTERUS
-                    || d.region == Region.STOMACH
-                    || d.region == Region.ANUS
-                    || d.region == Region.ORAL) {
-                d.cancerType = CancerType.IGNORED;
-                d.side = Side.IGNORED;
             }
         }
     }

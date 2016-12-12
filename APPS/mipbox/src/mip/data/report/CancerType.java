@@ -22,24 +22,69 @@ public enum CancerType {
         "invasive ductal and lobular carcinoma",
         "infiltrating ductal carcinoma",
         "invasive ductal carcinoma",
-        "IDC"}),
-    DCIS("DCIS", new String[]{"ductal carcinoma in situ"}),
+        "IDC"
+    }),
+    DCIS("DCIS", new String[]{
+        "ductal carcinoma in situ",
+        "atypical apocrine hyperplasia",
+        "atypical ductal hyperplasia"
+    }),
     BENIGN("benign", new String[]{
         "benign",
         "fibroadipose",
         "no carcinoma",
         "no metastasis",
         "no residual carcinoma",
+        "no residual tumor",
         "no tumor involve",
+        "no involvement of malignancy",
         "negative for metastasis",
         "negative for carcinoma",
         "fibroadenoma",
         "fibrocystic change",
-        "fat necrosis"}),
-    MIXED("mixed", null),
+        "fat necrosis",
+        "intradermal nevus",
+        "gynaecomastia",
+        "negative for malignancy",
+        "chronic inflammation",
+        "necrotic adipose tissue",
+        "usual ductal hyperplasia",
+        "fibrosis",
+        "adipose tissue",
+        "intraductal papilloma",
+        "steatocystoma",
+        "accessory nipple"
+    }),
+    TBD("TBD", null),
     HER2("HER2", null),
-    IGNORED("Ignored", null),
-    IMMUNO("Immuno", null);
+    IGNORED("Ignored", new String[]{
+        "no lymph node found",
+        "no lymph found",
+        "medial side",
+        "lateral side"
+    }),
+    IMMUNO("Immuno", null),
+    MALIGNANT("Malignant", new String[]{
+        "carcinoma involvement",
+        "fibroepithelial lesion",
+        "paget disease",
+        "atypical cell",
+        "atypical ductal cell",
+        "atypical papillary lesion",
+        "carcinoma",
+        "metastatic deposit",
+        "micrometastases",
+        "microcalcification",
+        "sclerosing adenosis",
+        "phyllodes tumor",
+        "papillary lesion",
+        "tumor necrosis",
+        "malignant",
+        "ER(+)",
+        "ER(-)",
+        "Her2",
+        "Ki67"
+    });
 
     private final String description;
     final String[] keywords;
@@ -108,8 +153,22 @@ public enum CancerType {
                                         : (hasBenign
                                                 ? CancerType.BENIGN
                                                 : null)))
-                        : CancerType.MIXED);
+                        : CancerType.TBD);
         assert (ret != null);
+
+        if (ret == CancerType.UNKNOWN) {
+            for (String k : CancerType.MALIGNANT.keywords) {
+                if (StringUtils.containsIgnoreCase(s, k)) {
+                    ret = CancerType.MALIGNANT;
+                }
+            }
+
+            for (String k : CancerType.IGNORED.keywords) {
+                if (StringUtils.containsIgnoreCase(s, k)) {
+                    ret = CancerType.IGNORED;
+                }
+            }
+        }
         return ret;
     }
 }

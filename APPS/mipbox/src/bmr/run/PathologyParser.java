@@ -17,9 +17,12 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import mip.data.report.BMR;
+import mip.data.report.CancerType;
 import mip.data.report.Diagnosis;
 import mip.data.report.Pathology;
 import static mip.data.report.Pathology.DT;
+import mip.data.report.Region;
+import mip.data.report.Side;
 import mip.util.LogUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -123,6 +126,19 @@ public class PathologyParser {
 
         StringBuilder csv = new StringBuilder(4096);
         for (String pid : pList.keySet()) {
+            boolean hasUnknown = false;
+            for (Pathology p : pathologyList.get(pid)) {
+                for (Diagnosis d : p.diagnosisList) {
+                    if (d.text.equals("-")) {
+                        continue;
+                    }
+                    if (d.region == Region.UNKNOWN || d.side == Side.UNKNOWN || d.cancerType == CancerType.UNKNOWN) {
+                        hasUnknown = true;
+                        LOG.info(d.text);
+                    }
+                }
+            }
+
             csv.append(pList.get(pid)).append(",");     // hospital
             csv.append("'").append(pid).append(",");    // patient ID
 

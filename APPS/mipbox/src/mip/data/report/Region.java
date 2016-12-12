@@ -12,19 +12,27 @@ import org.apache.commons.lang3.StringUtils;
  * @author ju
  */
 public enum Region {
-    UNKNOWN("Unknown", null),
-    BREAST("Breast", new String[]{"breast", "nipple"}),
-    SKIN("Skin", new String[]{"skin"}),
-    LYMPH("Lymph", new String[]{"lymph node", "axilla"}),
-    UTERUS("Uterus", new String[]{"uterus", "endometrium", "fallopian tube", "ovary"}),
-    STOMACH("Stomach", new String[]{"stomach"}),
+    DNA("DNA", new String[]{"KRAS", "mutation", "EGFR"}),
+    Head("Head", new String[]{"cheek", "salivary gland", "skull", "nasal", "face", "nasopharynx", "neck"}),
+    LUNG("Lung", new String[]{"lung"}),
+    THYROID("Thyroid", new String[]{"thyroid"}),
+    BONE("Bone", new String[]{"vetebra", "intervertebral", "iliac"}),
+    ABDOMEN("Abdomen", new String[]{"stomach", "abdominal", "omentum", "appendix"}),
     ANUS("Anus", new String[]{"anus"}),
     ORAL("Oral", new String[]{"oral"}),
     INTESTINE("Intestine", new String[]{"intestine"}),
     ESOPHAGUS("Esophagus", new String[]{"esophagus"}),
     GALLBLADDER("Gallbladder", new String[]{"gallbladder"}),
     DUODENUM("Duodenum", new String[]{"duodenum"}),
-    HAND("Hand", new String[]{"thumb", "wrist"}),;
+    HAND("Hand", new String[]{"thumb", "wrist"}),
+    PELVIC("Pelvic", new String[]{"pelvic"}),
+    LEG("Leg", new String[]{"knee"}),
+    FEMALE("Female", new String[]{"uterus", "endometrium", "fallopian tube", "falllopian", "ovary", "vagina", "cervix", "vaginal", "parametrium", "Vulva"}),
+    BREAST("Breast", new String[]{"breast", "nipple", "Rotter", "chest", "sentinel node", "ER(+)", "ER positive", "HER2", "HER-2"}),
+    LYMPH("Lymph", new String[]{"lymph node", "axilla"}),
+    SKIN("Skin", new String[]{"skin"}),
+    UNKNOWN("Unknown", null),
+    IGNORED("Ignored", null),;
 
     private final String description;
     final String[] keywords;
@@ -50,16 +58,6 @@ public enum Region {
             }
         }
         return UNKNOWN;
-//        if (StringUtils.startsWithIgnoreCase(s, Region.BREAST.keywords[0])
-//                || StringUtils.containsIgnoreCase(s, Region.BREAST.keywords[1])) {
-//            return Region.BREAST;
-//        } else if (StringUtils.containsIgnoreCase(s, Region.LN.keywords[0])) {
-//            return Region.LN;
-//        } else if (StringUtils.containsIgnoreCase(s, Region.SKIN.keywords[0])) {
-//            return Region.SKIN;
-//        } else {
-//            return Region.UNKNOWN;
-//        }
     }
 
 }
