@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import mip.data.report.BMR;
 import mip.data.report.CancerType;
@@ -134,7 +135,13 @@ public class PathologyParser {
                     }
                     if (d.region == Region.UNKNOWN || d.side == Side.UNKNOWN || d.cancerType == CancerType.UNKNOWN) {
                         hasUnknown = true;
-                        LOG.info(d.text);
+                        LOG.log(Level.INFO, "{0}\t{1}\t{2}\t{3}",
+                                new Object[]{
+                                    String.format("%10s", d.region),
+                                    String.format("%10s", d.side),
+                                    String.format("%10s", d.cancerType),
+                                    d.text
+                                });
                     }
                 }
             }

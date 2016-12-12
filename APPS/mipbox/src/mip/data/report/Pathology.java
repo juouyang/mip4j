@@ -396,6 +396,50 @@ public class Pathology {
                 }
             }
         }
+
+        Side s;
+        boolean hasUnknownSide = false;
+        boolean hasLeft = false;
+        boolean hasRight = false;
+        for (Diagnosis d : diagnosisList) {
+            if (!d.pathologyLink.pathologyID.equals(pathologyID)) {
+                continue;
+            }
+
+            if (null != d.side) {
+                switch (d.side) {
+                    case UNKNOWN:
+                        hasUnknownSide = true;
+                        break;
+                    case LEFT:
+                        hasLeft = true;
+                        break;
+                    case RIGHT:
+                        hasRight = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        boolean hasBothSide = hasLeft && hasRight;
+        if (hasUnknownSide && !hasBothSide) {
+            for (Diagnosis d : diagnosisList) {
+                if (!d.pathologyLink.pathologyID.equals(pathologyID)) {
+                    continue;
+                }
+
+                if (null != d.side) {
+                    switch (d.side) {
+                        case UNKNOWN:
+                            d.side = hasLeft ? Side.LEFT : Side.RIGHT;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     public String toCSVString() {
