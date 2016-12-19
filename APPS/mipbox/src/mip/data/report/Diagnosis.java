@@ -26,6 +26,9 @@ public class Diagnosis implements Comparable<Diagnosis> {
         for (final String s : diagnosisText.split("\n")) {
             Diagnosis d = new Diagnosis(p, s);
             p.diagnosisList.add(d);
+            if (d.region == Region.BREAST) {
+                p.hasBreast = true;
+            }
         }
     }
 
@@ -40,7 +43,7 @@ public class Diagnosis implements Comparable<Diagnosis> {
     private Diagnosis(Pathology p, String s) {
         region = Region.fromString(s);
         side = Side.fromString(s);
-        if (region == Region.FEMALE || region == Region.ABDOMEN) { // TODO: ignore not breast 
+        if (region != Region.BREAST && side != Side.LEFT && side != Side.RIGHT) {
             side = Side.IGNORED;
         }
         biopsyType = Biopsy.fromString(s);
@@ -50,14 +53,15 @@ public class Diagnosis implements Comparable<Diagnosis> {
 
         // NER-2 not amplified
         if (s.contains("HER")) {
-            region = Region.BREAST;
-            side = Side.IGNORED;
-
             if ((StringUtils.containsIgnoreCase(s, "not amplified")
                     || StringUtils.containsIgnoreCase(s, "Indeterminate"))) {
+                region = Region.BREAST;
+                side = Side.IGNORED;
                 cancerType = CancerType.HER2;
             } else if (StringUtils.containsIgnoreCase(s, "is amplified")
                     || StringUtils.containsIgnoreCase(s, "is equivocally amplified")) {
+                region = Region.BREAST;
+                side = Side.IGNORED;
                 cancerType = CancerType.IGNORED;
             }
         }
@@ -88,7 +92,7 @@ public class Diagnosis implements Comparable<Diagnosis> {
             side = Side.IGNORED;
         }
 
-        // ignore lymph node without cancer type or side
+        // ignore lymph node without cancer type
         if (region == Region.LYMPH && cancerType == CancerType.UNKNOWN) {
             cancerType = CancerType.IGNORED;
             side = Side.IGNORED;

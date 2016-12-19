@@ -24,10 +24,12 @@ public enum CancerType {
         "invasive ductal carcinoma",
         "IDC"
     }),
+    IDC_("IDC!", null),
     DCIS("DCIS", new String[]{
         "ductal carcinoma in situ",
         "atypical apocrine hyperplasia",
-        "atypical ductal hyperplasia"
+        "atypical ductal hyperplasia",
+        "papillary carcinoma, intraductal"
     }),
     BENIGN("benign", new String[]{
         "benign",
@@ -172,7 +174,7 @@ public enum CancerType {
 
         if (ret == CancerType.TBD) {
             if (hasIDC && hasDCIS) {
-                ret = CancerType.MALIGNANT;
+                ret = CancerType.IDC_;
             } else if (hasBenign) {
                 ret = hasIDC ? CancerType.IDC : CancerType.DCIS;
             }

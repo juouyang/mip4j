@@ -166,6 +166,26 @@ public class Immuno {
         this.text = immunoText;
     }
 
+    public boolean hasValue() {
+        return !(her2 == Integer.MIN_VALUE && ki67 == Double.MIN_VALUE && er == Integer.MIN_VALUE && pr == Integer.MIN_VALUE);
+    }
+
+    public String getHER2() {
+        return her2 == Integer.MIN_VALUE ? "-" : "" + her2;
+    }
+
+    public String getKi67() {
+        return ki67 == Double.MIN_VALUE ? "-" : "" + ki67;
+    }
+
+    public String getER() {
+        return er == Integer.MIN_VALUE ? "-" : "" + er;
+    }
+
+    public String getPR() {
+        return pr == Integer.MIN_VALUE ? "-" : "" + pr;
+    }
+
     public String toCSVString() {
         StringBuilder sb = new StringBuilder(64);
 

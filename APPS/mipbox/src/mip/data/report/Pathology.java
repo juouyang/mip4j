@@ -97,8 +97,14 @@ public class Pathology {
     public final List<Diagnosis> diagnosisList = new ArrayList<>(10);
     public final Immuno immuno = new Immuno();
     public final String text;
+    public boolean hasBreast = false;
 
     public Pathology(String pid, String text) {
+
+        if (pid.equals("11021252")) {
+            System.out.println("");
+        }
+
         String[] lines = text.replace("\r", "").split("\n");
         String[] tokens;
 
@@ -385,6 +391,10 @@ public class Pathology {
             }
         }
         immuno.setPR(pr);
+        
+        // =====================================================================
+        // =====================================================================
+        // =====================================================================
 
         if (immunoCount > 0) {
             for (Diagnosis d : diagnosisList) {
@@ -432,7 +442,7 @@ public class Pathology {
                 if (null != d.side) {
                     switch (d.side) {
                         case UNKNOWN:
-                            d.side = hasLeft ? Side.LEFT : Side.RIGHT;
+                            d.side = hasLeft ? Side.LEFT : hasRight ? Side.RIGHT : Side.UNKNOWN;
                             break;
                         default:
                             break;
@@ -440,7 +450,7 @@ public class Pathology {
                 }
             }
         }
-        
+
         //TODO: merge diagnoses by biopsyDate
     }
 
