@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -125,9 +126,10 @@ public class PathologyParser {
 
         Pathology.verify(pList, pathologyList);
 
-        StringBuilder csv = new StringBuilder(4096);
+        StringBuilder pT = new StringBuilder(4096); // pathology
+        StringBuilder dG = new StringBuilder(4096); // Diagnosis
+        StringBuilder iM = new StringBuilder(4096); // Immuno
         for (String pid : pList.keySet()) {
-            boolean hasUnknown = false;
 
             boolean hasBreast = false;
             int l_dcis = 0;
@@ -141,9 +143,17 @@ public class PathologyParser {
 
             int cnt_immuno = 0;
             String her2 = "-";
+            LocalDate her2Date = LocalDate.MAX;
+            boolean her2Conflict = false;
             String ki67 = "-";
+            LocalDate ki67Date = LocalDate.MAX;
+            boolean ki67Conflict = false;
             String er = "-";
+            LocalDate erDate = LocalDate.MAX;
+            boolean erConflict = false;
             String pr = "-";
+            LocalDate prDate = LocalDate.MAX;
+            boolean prConflict = false;
 
             for (Pathology p : pathologyList.get(pid)) {
                 if (p.hasBreast) {
@@ -152,10 +162,84 @@ public class PathologyParser {
 
                 if (p.immuno.hasValue()) {
                     cnt_immuno++;
-                    her2 = p.immuno.getHER2();
-                    ki67 = p.immuno.getKi67();
-                    er = p.immuno.getER();
-                    pr = p.immuno.getPR();
+                    String cur_her2 = p.immuno.getHER2();
+
+                    if (!"-".equals(her2) && !"-".equals(cur_her2) && !her2.equals(cur_her2)) {
+                        if ((her2.equals("2") || her2.equals("3")) && (cur_her2.equals("2") || cur_her2.equals("3"))) {
+                            LOG.log(Level.FINEST, "HER2!!\t{0}\t{1}\t{2}\t{3}",
+                                    new Object[]{
+                                        pList.get(pid),
+                                        pid,
+                                        her2,
+                                        cur_her2});
+                            her2Conflict = true;
+                        }
+                    }
+
+                    her2 = (!her2Conflict) ? cur_her2 : "2*";
+                    her2Date = "-".equals(her2) ? LocalDate.MAX : her2Conflict ? "2".equals(cur_her2) ? p.pathologyDate : her2Date : p.pathologyDate;
+
+                    final String cur_ki67 = p.immuno.getKi67();
+                    String pad = "";
+
+                    if (!"-".equals(ki67) && !"-".equals(cur_ki67)) {
+                        if (!ki67.equals(cur_ki67)) {
+                            if ((Double.parseDouble(ki67) >= 14 && Double.parseDouble(cur_ki67) < 14)
+                                    || (Double.parseDouble(ki67) < 14 && Double.parseDouble(cur_ki67) >= 14)) {
+                                LOG.log(Level.FINEST, "Ki67!!\t{0}\t{1}\t{2}\t{3}",
+                                        new Object[]{
+                                            pList.get(pid),
+                                            pid,
+                                            ki67,
+                                            cur_ki67});
+                                ki67Conflict = true;
+                            }
+                        }
+                        pad += "*";
+                    }
+
+                    ki67 = cur_ki67 + pad;
+                    ki67Date = "-".equals(ki67) ? LocalDate.MAX : ki67Conflict ? LocalDate.MIN : p.pathologyDate;
+
+                    final String cur_er = p.immuno.getER();
+                    pad = "";
+
+                    if (!"-".equals(er) && !"-".equals(cur_er) && !er.equals(cur_er)) {
+                        if ((Integer.parseInt(er) >= 1 && Integer.parseInt(cur_er) == 0)
+                                || (Integer.parseInt(er) == 0 && Integer.parseInt(cur_er) >= 1)) {
+                            LOG.log(Level.FINEST, "ER!!!!\t{0}\t{1}\t{2}\t{3}",
+                                    new Object[]{
+                                        pList.get(pid),
+                                        pid,
+                                        er,
+                                        cur_er});
+                            erConflict = true;
+                        }
+                        pad += "*";
+                    }
+
+                    er = p.immuno.getER() + pad;
+                    erDate = "-".equals(er) ? LocalDate.MAX : erConflict ? LocalDate.MIN : p.pathologyDate;
+
+                    final String cur_pr = p.immuno.getPR();
+                    pad = "";
+
+                    if (!"-".equals(pr) && !"-".equals(cur_pr) && !pr.equals(cur_pr)) {
+                        if ((Integer.parseInt(pr) >= 1 && Integer.parseInt(cur_pr) == 0)
+                                || (Integer.parseInt(pr) == 0 && Integer.parseInt(cur_pr) >= 1)) {
+                            LOG.log(Level.FINEST, "ER!!!!\t{0}\t{1}\t{2}\t{3}",
+                                    new Object[]{
+                                        pList.get(pid),
+                                        pid,
+                                        pr,
+                                        cur_pr});
+                            prConflict = true;
+                        }
+                        pad += "*";
+                    }
+
+                    pr = p.immuno.getPR() + pad;
+                    prDate = "-".equals(pr) ? LocalDate.MAX : prConflict ? LocalDate.MIN : p.pathologyDate;
                 }
 
                 for (Diagnosis d : p.diagnosisList) {
@@ -164,9 +248,9 @@ public class PathologyParser {
                     }
 
                     if (d.region == Region.UNKNOWN || d.side == Side.UNKNOWN || d.cancerType == CancerType.UNKNOWN) {
-                        hasUnknown = true;
-                        LOG.log(Level.INFO, "!!!!\t{0}\t{1}\t{2}\t{3}\t{4}",
+                        LOG.log(Level.FINEST, "UNKNOWN\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                 new Object[]{
+                                    pList.get(pid),
                                     pid,
                                     String.format("%10s", d.region),
                                     String.format("%10s", d.side),
@@ -183,7 +267,7 @@ public class PathologyParser {
                                         l_dcis++;
                                         break;
                                     case IDC:
-                                    case IDC_:
+                                        //case IDC_:
                                         l_idc++;
                                         break;
                                     case MALIGNANT:
@@ -201,7 +285,7 @@ public class PathologyParser {
                                         r_dcis++;
                                         break;
                                     case IDC:
-                                    case IDC_:
+                                        //case IDC_:
                                         r_idc++;
                                         break;
                                     case MALIGNANT:
@@ -230,14 +314,14 @@ public class PathologyParser {
                 right = CancerType.IGNORED;
             } else {
                 if (l_dcis != 0 && l_idc != 0) {
-                    left = CancerType.IDC_;
+                    left = CancerType.IDC/*_*/;
                 } else if (l_dcis == 0 && l_idc == 0) {
                     if (l_benign != 0 && l_malignant != 0) {
-                        LOG.log(Level.INFO, "BENIGN+MALIGNANT\t{0}\t{1}",
-                                new Object[]{
-                                    pList.get(pid),
-                                    pid
-                                });
+//                        LOG.log(Level.INFO, "良加惡\t{0}\t{1}",
+//                                new Object[]{
+//                                    pList.get(pid),
+//                                    pid
+//                                });
                     } else if (l_benign == 0 && l_malignant == 0) {
                         left = CancerType.IGNORED;
                     } else {
@@ -248,14 +332,14 @@ public class PathologyParser {
                 }
 
                 if (r_dcis != 0 && r_idc != 0) {
-                    right = CancerType.IDC_;
+                    right = CancerType.IDC/*_*/;
                 } else if (r_dcis == 0 && r_idc == 0) {
                     if (r_benign != 0 && r_malignant != 0) {
-                        LOG.log(Level.INFO, "BENIGN+MALIGNANT\t{0}\t{1}",
-                                new Object[]{
-                                    pList.get(pid),
-                                    pid
-                                });
+//                        LOG.log(Level.INFO, "良加惡\t{0}\t{1}",
+//                                new Object[]{
+//                                    pList.get(pid),
+//                                    pid
+//                                });
                     } else if (r_benign == 0 && r_malignant == 0) {
                         right = CancerType.IGNORED;
                     } else {
@@ -267,100 +351,190 @@ public class PathologyParser {
             }
             boolean bothIgnored = left == CancerType.IGNORED && right == CancerType.IGNORED;
 
+            LocalDate l_date = null;
+            LocalDate r_date = null;
+
+            if (bothIgnored) {
+            } else {
+                for (Pathology p : pathologyList.get(pid)) {
+                    for (Diagnosis d : p.diagnosisList) {
+                        final LocalDate pathologyDate = d.pathologyLink.pathologyDate;
+                        if (null != d.side) {
+                            switch (d.side) {
+                                case LEFT:
+                                    if (left == CancerType.TBD) {
+                                        continue;
+                                    }
+
+                                    if (l_date == null) {
+                                        l_date = (d.cancerType == left) ? pathologyDate : null;
+                                    } else {
+                                        if (!l_date.isEqual(pathologyDate)) {
+                                            if (ChronoUnit.DAYS.between(l_date, pathologyDate) > 30) {
+//                                                LOG.log(Level.INFO, "L_DATE\t{0}\t{1}\t{2}\t{3}",
+//                                                        new Object[]{
+//                                                            pList.get(pid),
+//                                                            pid,
+//                                                            l_date, pathologyDate});
+                                            } else {
+                                                l_date = l_date.isAfter(pathologyDate) ? l_date : pathologyDate;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case RIGHT:
+                                    if (right == CancerType.TBD) {
+                                        continue;
+                                    }
+                                    if (r_date == null) {
+                                        r_date = (d.cancerType == right) ? pathologyDate : null;
+                                    } else {
+                                        if (!r_date.isEqual(pathologyDate)) {
+                                            if (ChronoUnit.DAYS.between(r_date, pathologyDate) > 30) {
+//                                                LOG.log(Level.INFO, "R_DATE\t{0}\t{1}\t{2}\t{3}",
+//                                                        new Object[]{
+//                                                            pList.get(pid),
+//                                                            pid,
+//                                                            r_date, pathologyDate});
+                                            } else {
+                                                r_date = r_date.isAfter(pathologyDate) ? r_date : pathologyDate;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
             if (cnt_immuno == 1) {
             } else if (cnt_immuno > 1) {
-                LOG.log(Level.INFO, "IMMUNO\t{0}\t{1}\t{2}",
-                        new Object[]{
-                            pList.get(pid),
-                            pid,
-                            cnt_immuno
-                        });
+                //LOG.log(Level.INFO, "IMMUNO\t{0}\t{1}\t{2}",new Object[]{pList.get(pid),pid,cnt_immuno});
             }
 
-            csv.append(pList.get(pid)).append(",");     // hospital
-            csv.append("'").append(pid).append(",");    // patient ID
+            {
+                pT.append(pList.get(pid)).append(",");     // hospital
+                pT.append("'").append(pid).append(",");    // patient ID
 
-            final LinkedHashSet<Pathology> ps = pathologyList.get(pid);
-            if (ps != null) {
-                csv.append(left).append(",");
-                csv.append(right).append(",");
-                csv.append(bothIgnored).append(",");
-
-                // diagnosis
-                {
-                    csv.append("\"");
+                final LinkedHashSet<Pathology> ps = pathologyList.get(pid);
+                if (ps != null) {
+                    // pathology source text
+                    pT.append("\"");
                     for (Pathology p : ps) {
-                        for (Diagnosis d : p.diagnosisList) {
-                            if (d.text.equals("-")) {
-                                continue;
-                            }
-
-                            if (d.cancerType == CancerType.IGNORED || d.region == Region.IGNORED || d.side == Side.IGNORED) {
-                                //continue;
-                            }
-
-                            csv.append("[").append(p.pathologyID).append("],");
-                            csv.append(d.region).append(",");
-                            csv.append(d.side).append(",");
-                            csv.append(d.cancerType);
-                            csv.append("\n--------------------------------\n");
+                        if (p.text.equals("-")) {
+                            continue;
                         }
+                        pT.append(p.text);
+                        pT.append("\n==========================================\n");
                     }
-                    csv.append("\"").append(",");
+                    pT.append("\"");
+
+                } else {
                 }
 
-                // diagnosis source text
-                {
-                    csv.append("\"");
-                    for (Pathology p : ps) {
-                        for (Diagnosis d : p.diagnosisList) {
-                            if (d.text.equals("-")) {
-                                continue;
-                            }
-                            csv.append("[").append(p.pathologyID).append("]\t");
-                            csv.append(d.text);
-                            csv.append("\n--------------------------------\n");
-                        }
-                    }
-                    csv.append("\"").append(",");
-                }
-
-                csv.append(her2).append(",");
-                csv.append(ki67).append(",");
-                csv.append(er).append(",");
-                csv.append(pr).append(",");
-                csv.append(cnt_immuno).append(",");
-
-                // immunohistochemical source text
-                csv.append("\"");
-                for (Pathology p : ps) {
-                    if (p.immuno.text.equals("-")) {
-                        continue;
-                    }
-                    csv.append("[").append(p.pathologyID).append("]\n");
-                    csv.append(p.immuno.text);
-                    csv.append("\n--------------------------------\n");
-                }
-                csv.append("\"").append(",");
-
-                // pathology source text
-                csv.append("\"");
-                for (Pathology p : ps) {
-                    if (p.text.equals("-")) {
-                        continue;
-                    }
-                    csv.append(p.text);
-                    csv.append("\n--------------------------------\n");
-                }
-                csv.append("\"").append(",");
-
-            } else {
+                pT.append("\n");
             }
 
-            csv.append("\n");
+            {
+                dG.append(pList.get(pid)).append(",");      // hospital
+                dG.append("'").append(pid).append(",");     // patient ID
+
+                final LinkedHashSet<Pathology> ps = pathologyList.get(pid);
+                if (ps != null) {
+                    dG.append(left).append(",");
+                    dG.append(right).append(",");
+                    dG.append(l_date == null ? "-" : l_date).append(",");
+                    dG.append(r_date == null ? "-" : r_date).append(",");
+                    dG.append(bothIgnored).append(",");
+
+                    // diagnosis
+                    {
+                        dG.append("\"");
+                        for (Pathology p : ps) {
+                            for (Diagnosis d : p.diagnosisList) {
+                                if (d.text.equals("-")) {
+                                    continue;
+                                }
+
+                                if (d.cancerType == CancerType.IGNORED || d.region == Region.IGNORED || d.side == Side.IGNORED) {
+                                    continue;
+                                }
+
+                                dG.append("[").append(p.pathologyID).append("],");
+                                dG.append(d.region).append(",");
+                                dG.append(d.side).append(",");
+                                dG.append(d.cancerType);
+                                dG.append("\n");
+                            }
+                        }
+                        dG.append("\"").append(",");
+                    }
+                    // diagnosis source text
+                    {
+                        dG.append("\"");
+                        for (Pathology p : ps) {
+                            for (Diagnosis d : p.diagnosisList) {
+                                if (d.text.equals("-")) {
+                                    continue;
+                                }
+                                dG.append("[").append(p.pathologyID).append("]\t");
+                                dG.append(d.text);
+                                dG.append("\n");
+                            }
+                        }
+                        dG.append("\"");
+                    }
+                } else {
+                }
+
+                dG.append("\n");
+            }
+
+            {
+                iM.append(pList.get(pid)).append(",");     // hospital
+                iM.append("'").append(pid).append(",");    // patient ID
+
+                final LinkedHashSet<Pathology> ps = pathologyList.get(pid);
+                if (ps != null) {
+                    iM.append(her2).append(",");
+                    iM.append(ki67).append(",");
+                    iM.append(er).append(",");
+                    iM.append(pr).append(",");
+                    boolean allChecked = !"-".equals(her2)
+                            && !"-".equals(ki67)
+                            && !"-".equals(er)
+                            && !"-".equals(pr);
+                    iM.append(!allChecked).append(",");
+                    iM.append(her2Date == LocalDate.MAX ? "-" : her2Date == LocalDate.MIN ? "X" : her2Date).append(",");
+                    iM.append(ki67Date == LocalDate.MAX ? "-" : ki67Date == LocalDate.MIN ? "X" : ki67Date).append(",");
+                    iM.append(erDate == LocalDate.MAX ? "-" : erDate == LocalDate.MIN ? "X" : erDate).append(",");
+                    iM.append(prDate == LocalDate.MAX ? "-" : prDate == LocalDate.MIN ? "X" : prDate).append(",");
+                    iM.append(cnt_immuno).append(",");
+
+                    // immunohistochemical source text
+                    iM.append("\"");
+                    for (Pathology p : ps) {
+                        if (p.immuno.text.equals("-")) {
+                            continue;
+                        }
+                        iM.append("[").append(p.pathologyID).append("]\n");
+                        iM.append(p.immuno.text);
+                        iM.append("\n");
+                    }
+                    iM.append("\"");
+                } else {
+                }
+
+                iM.append("\n");
+            }
         }
-        FileUtils.writeStringToFile(new File(DATA_ROOT + "PATHOLOGY.csv"), csv.toString());
 
+        FileUtils.writeStringToFile(new File(DATA_ROOT + "PATHOLOGY.csv"), pT.toString());
+        FileUtils.writeStringToFile(new File(DATA_ROOT + "DIAGNOSIS.csv"), dG.toString());
+        FileUtils.writeStringToFile(new File(DATA_ROOT + "IMMUNOCHL.csv"), iM.toString());
     }
 
 }

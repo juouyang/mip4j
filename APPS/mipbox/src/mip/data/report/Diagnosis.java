@@ -51,18 +51,20 @@ public class Diagnosis implements Comparable<Diagnosis> {
         text = s;
         pathologyLink = p;
 
-        // NER-2 not amplified
+        // HER-2 not amplified
         if (s.contains("HER")) {
             if ((StringUtils.containsIgnoreCase(s, "not amplified")
                     || StringUtils.containsIgnoreCase(s, "Indeterminate"))) {
                 region = Region.BREAST;
                 side = Side.IGNORED;
                 cancerType = CancerType.HER2;
+                return;
             } else if (StringUtils.containsIgnoreCase(s, "is amplified")
                     || StringUtils.containsIgnoreCase(s, "is equivocally amplified")) {
                 region = Region.BREAST;
                 side = Side.IGNORED;
                 cancerType = CancerType.IGNORED;
+                return;
             }
         }
 
@@ -73,30 +75,39 @@ public class Diagnosis implements Comparable<Diagnosis> {
                 region = Region.IGNORED;
                 cancerType = CancerType.IGNORED;
                 side = Side.IGNORED;
+                return;
             }
         }
         if (s.contains("IMMUNOHISTOCHEMICAL STUDY") || s.contains("Revise:")) {
             region = Region.IGNORED;
             cancerType = CancerType.IGNORED;
             side = Side.IGNORED;
+            return;
         }
         if (s.contains("修正")) {
             region = Region.IGNORED;
             cancerType = CancerType.IGNORED;
             side = Side.IGNORED;
+            return;
         }
 
         // ignore cancer type for none breast region
         if (region != Region.BREAST && region != Region.LYMPH) {
             cancerType = CancerType.IGNORED;
             side = Side.IGNORED;
+            return;
         }
 
         // ignore lymph node without cancer type
         if (region == Region.LYMPH && cancerType == CancerType.UNKNOWN) {
             cancerType = CancerType.IGNORED;
             side = Side.IGNORED;
+            return;
         }
+
+        assert (region == Region.BREAST || region == Region.LYMPH);
+        assert (cancerType != CancerType.TBD);
+        assert (side != Side.MIXED);
     }
 
     @Override
