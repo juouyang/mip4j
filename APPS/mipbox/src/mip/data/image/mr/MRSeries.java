@@ -41,7 +41,7 @@ public class MRSeries {
     }
     public final MR[] imageArrayXY;
     private String seriesNumber;
-    private final ImagePlus imp;
+    private ImagePlus imp = null;
     private final ArrayList<Path> dcmFiles;
 
     public final double pixelSpacingX;
@@ -70,12 +70,20 @@ public class MRSeries {
         pixelSpacingY = rs[1];
         sliceThickness = rs[2];
         isCompressed = rs[3] == 1;
-        imp = new ImagePlus(seriesNumber, IJUtils.toImageStack(imageArrayXY));
+        //imp = new ImagePlus(seriesNumber, IJUtils.toImageStack(imageArrayXY));
 
     }
 
+    private ImagePlus getImagePlus() {
+        if (imp == null) {
+            imp = new ImagePlus(seriesNumber, IJUtils.toImageStack(imageArrayXY));
+        }
+
+        return imp;
+    }
+
     public ImagePlus mip() {
-        ZProjector z = new ZProjector(imp);
+        ZProjector z = new ZProjector(getImagePlus());
         z.setMethod(1); // "Maximun Intensity Projection
         z.doProjection();
         ImagePlus mip = z.getProjection();
@@ -84,15 +92,15 @@ public class MRSeries {
     }
 
     public void display(int p) {
-        imp.show();
-        imp.setPosition(p);
-        IJUtils.exitWhenWindowClosed(imp.getWindow());
+        getImagePlus().show();
+        getImagePlus().setPosition(p);
+        IJUtils.exitWhenWindowClosed(getImagePlus().getWindow());
     }
 
     public void render(int resample) {
-        StackConverter sc = new StackConverter(imp);
+        StackConverter sc = new StackConverter(getImagePlus());
         sc.convertToGray8();
-        IJUtils.render(imp, resample, 70, 25);
+        IJUtils.render(getImagePlus(), resample, 70, 25);
     }
 
     public int getWidth() {

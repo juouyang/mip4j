@@ -1,2 +1,12 @@
-#gnome-terminal -x /home/ju/workspace/mip4j/APPS/mipbox/singleMR %f
-java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@
+### with gnome-terminal open
+# gnome-terminal --window-with-profile=BMRI -x /usr/bin/java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@
+
+### with xterm open
+# xterm -hold -e /usr/bin/java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@
+
+### with st open
+st -e /usr/bin/java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@
+
+
+### without terminal open
+#java -Xmx3072m -classpath /home/ju/workspace/mip4j/APPS/mipbox/dist/mipbox.jar bmr.run.SingleMR $@

@@ -36,9 +36,9 @@ import org.apache.commons.lang3.Range;
  */
 public class Kinetic {
 
-    private static final double STRONG_ENHANCE = 0.32;
-    private static final Range<Double> PLATEAU = Range.between(-0.05, 0.05);
-    private static final double GLANDULAR_NOISE_RATIO = 1.47;
+    private static final double RAPID_ENHANCE = 0.32;
+    private static final Range<Double> PLATEAU = Range.between(-0.10, 0.10);
+    private static final double GLANDULAR_NOISE_RATIO = 1.33;
     private static final Logger LOG = LogUtils.LOGGER;
 
     public static void main(String args[]) {
@@ -172,7 +172,7 @@ public class Kinetic {
         i.setPosition(size / 2);
 
         final ImageWindow iw = i.getWindow();
-        iw.setResizable(false);
+        //iw.setResizable(false);
         iw.setLocation(10 + 530, 10);
         mip.getWindow().setLocation(10, 10);
         iw.addWindowListener(new WindowAdapter() {
@@ -182,10 +182,10 @@ public class Kinetic {
                     System.exit(0);
                 }
                 mip.getWindow().close();
+                System.gc();
                 synchronized (Kinetic.this) {
                     finished = true;
                     Kinetic.this.notifyAll();
-                    System.gc();
                 }
             }
         });
@@ -204,7 +204,7 @@ public class Kinetic {
         ic.addMouseWheelListener(new MouseAdapter() {
             @Override
             public void mouseWheelMoved(MouseWheelEvent e) {
-                if (e.isControlDown()) {
+                if (e.isControlDown()) { // ctrl  pressed
                     Point loc = ic.getCursorLoc();
                     if (!ic.cursorOverImage()) {
                         Rectangle srcRect = ic.getSrcRect();
@@ -220,7 +220,7 @@ public class Kinetic {
                     } else {
                         ic.zoomIn(X, Y);
                     }
-                } else {
+                } else { // no ctrl pressed
                     final int X = ic.getCursorLoc().x;
                     final int Y = ic.getCursorLoc().y;
                     int Z = i.getCurrentSlice();
@@ -235,7 +235,7 @@ public class Kinetic {
         ic.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent me) {
-                if (me.isControlDown() && me.isAltDown()) {
+                if (me.isControlDown() && me.isAltDown()) { // ctrl+alt pressed
                     final int X = ic.getCursorLoc().x;
                     final int Y = ic.getCursorLoc().y;
                     final int Z = i.getCurrentSlice() - 1;
@@ -258,10 +258,10 @@ public class Kinetic {
                                     + bmrStudy.getStudyID()
                                     + "_" + side + "_"
                                     + desc + "_"
-                                    + String.format("%d_%d_%d.seed", X, Y, Z);
+                                    + String.format("seed(%d,%d,%d)", X, Y, Z);
 
                             ROIUtils.saveVOI(rois, roiFile);
-                            ROIUtils.showROI(roiFile, EXIT_WHEN_WINDOW_CLOSED);
+                            //ROIUtils.showROI(roiFile, EXIT_WHEN_WINDOW_CLOSED);
 
                             File p = new File(pn);
                             try {
@@ -277,11 +277,11 @@ public class Kinetic {
         });
     }
 
-    public boolean isStrongEnhanced(int x, int y, int z) {
+    public boolean isRapidInitialRise(int x, int y, int z) {
         int initial = bmrStudy.getPixel(x, y, z, 0);
         int peak = bmrStudy.getPixel(x, y, z, 1);
         double R1 = (peak - initial) / (double) initial;
-        return initial >= glandular && R1 > STRONG_ENHANCE;
+        return initial >= glandular && R1 > RAPID_ENHANCE;
     }
 
     private KineticType mapping(int initial, int peak, int delay) {
@@ -293,7 +293,7 @@ public class Kinetic {
                 ret = PLATEAU.contains(R2) ? KineticType.FLUID : ret;
             } else if (R1 < -0.2) {
                 ret = PLATEAU.contains(R2) ? KineticType.EDEMA : ret;
-            } else if (R1 > STRONG_ENHANCE) {
+            } else if (R1 > RAPID_ENHANCE) {
                 ret = PLATEAU.contains(R2) ? KineticType.PLATEAU : ret;
                 ret = R2 < PLATEAU.getMinimum() ? KineticType.WASHOUT : ret;
                 ret = R2 > PLATEAU.getMaximum() ? KineticType.PERSIST : ret;

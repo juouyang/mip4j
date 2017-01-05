@@ -50,7 +50,7 @@ public class BitVolume {
                             continue;
                         }
 
-                        if (k.isStrongEnhanced(nx, ny, nz)) {
+                        if (k.isRapidInitialRise(nx, ny, nz)) {
                             Point3d np = new Point3d(nx, ny, nz);
                             s.push(np);
                             checked.setPixel(nx, ny, nz, true);
