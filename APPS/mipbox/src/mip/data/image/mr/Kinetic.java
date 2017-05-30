@@ -10,13 +10,11 @@ import ij.ImageStack;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.StackStatistics;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -55,6 +53,7 @@ public class Kinetic {
     public final int size;
     public final int glandular;
     public boolean finished = false;
+    public boolean mriBackground = true;
 
     public Kinetic(BMRStudy bmr) {
         this(bmr, true);
@@ -97,6 +96,10 @@ public class Kinetic {
             final int[] rgb = new int[3];
             for (int i = 0; i < size; i++) {
                 ColorProcessor cp = new ColorProcessor(width, height);
+                ByteProcessor bp = mriBackground ? IJUtils.toByteProcessor(
+                        bmrStudy.T1.imageArrayXY[i],
+                        bmrStudy.T1.imageArrayXY[i].getWindowCenter(),
+                        bmrStudy.T1.imageArrayXY[i].getWindowWidth()) : null;
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
                         int initial = bmrStudy.getPixel(x, y, i, 0);
@@ -105,6 +108,12 @@ public class Kinetic {
                         KineticType kt = mapping(initial, peak, delay);
 
                         if (kt.color == null) {
+                            if (bp != null) {
+                                rgb[0] = Math.max(bp.get(x, y) - 64, 0);
+                                rgb[1] = Math.max(bp.get(x, y) - 64, 0);
+                                rgb[2] = Math.max(bp.get(x, y) - 64, 0);
+                                cp.putPixel(x, y, rgb);
+                            }
                             continue;
                         }
 
@@ -166,6 +175,7 @@ public class Kinetic {
     }
 
     private void display(ImagePlus i) {
+        IJUtils.openImageJ(true);
         i.show();
         ImagePlus mip = bmrStudy.T1.mip();
         mip.show();
@@ -201,37 +211,7 @@ public class Kinetic {
                 super.mouseMoved(e);
             }
         });
-        ic.addMouseWheelListener(new MouseAdapter() {
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-                if (e.isControlDown()) { // ctrl  pressed
-                    Point loc = ic.getCursorLoc();
-                    if (!ic.cursorOverImage()) {
-                        Rectangle srcRect = ic.getSrcRect();
-                        loc.x = srcRect.x + srcRect.width / 2;
-                        loc.y = srcRect.y + srcRect.height / 2;
-                    }
-                    final int X = ic.screenX(loc.x);
-                    final int Y = ic.screenY(loc.y);
-                    if (e.getWheelRotation() > 0) {
-                        if (ic.getMagnification() > 1.0) {
-                            ic.zoomOut(X, Y);
-                        }
-                    } else {
-                        ic.zoomIn(X, Y);
-                    }
-                } else { // no ctrl pressed
-                    final int X = ic.getCursorLoc().x;
-                    final int Y = ic.getCursorLoc().y;
-                    int Z = i.getCurrentSlice();
-                    Z += e.getWheelRotation() > 0 ? 1 : -1;
-                    Z = Z > i.getNSlices() ? i.getNSlices() : Z < 1 ? 1 : Z;
-                    i.setPosition(Z);
-                    i.setTitle(Kinetic.this.toString(X, Y, Z - 1));
-                }
-                super.mouseWheelMoved(e);
-            }
-        });
+
         ic.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent me) {
@@ -245,6 +225,7 @@ public class Kinetic {
                     BitVolume voi = BitVolume.regionGrowing(Kinetic.this, seed);
                     if (voi != null) {
                         ImagePlus imp = colorMapping(voi);
+                        imp.show();
                         {
                             List<Roi> rois = voi.getROIs();
                             String desc = ROIUtils.getDesc(rois);
