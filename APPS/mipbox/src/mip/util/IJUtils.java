@@ -20,6 +20,7 @@ import mip.data.image.ShortImage;
 public class IJUtils {
 
     private static Image3DUniverse UNIV;
+    private static boolean isExitWhenQuitting;
 
     private static Image3DUniverse get3DUniv() {
         if (UNIV == null) {
@@ -28,10 +29,18 @@ public class IJUtils {
         return UNIV;
     }
 
+    public static ImageJ openImageJ() {
+        return openImageJ(true);
+    }
+
     public static ImageJ openImageJ(boolean exitWhenQuitting) {
-        ImageJ ij = IJ.getInstance() == null ? new ImageJ() : IJ.getInstance();
-        ij.exitWhenQuitting(exitWhenQuitting);
-        return ij;
+        isExitWhenQuitting = exitWhenQuitting;
+        if (IJ.getInstance() == null) {
+            ImageJ ij = new ImageJ();
+            ij.exitWhenQuitting(exitWhenQuitting);
+            ij.setAlwaysOnTop(true);
+        }
+        return IJ.getInstance();
     }
 
     public static void render(ImagePlus i) {

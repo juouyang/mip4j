@@ -12,32 +12,32 @@ import java.awt.Color;
  * @author ju
  */
 public enum KineticType {
-
-    //GLAND("Glandular", new Color(10, 10, 10)),
-    GLAND("Glandular", Color.DARK_GRAY),
-    //GLAND("Glandular", null),
-    //WASHOUT("Washout", Color.RED),
-    WASHOUT("Washout", new Color(226, 35, 26)),
-    PLATEAU("Plateau", new Color(180 - 50, 105 - 50, 198 - 50)),
-    //PLATEAU("Plateau", Color.MAGENTA),
-    PERSIST("Persistent", new Color(255 - 100, 221 - 100, 0)),
-    //EDEMA("Edema", Color.GREEN),
-    //FLUID("Fluid", Color.BLUE),
-    EDEMA("Edema", null),
-    FLUID("Fluid", null),
-    UNMAPPED("Unmapped", null);
+    GLAND("Gland", Color.LIGHT_GRAY, Color.LIGHT_GRAY),
+    WASHOUT("Washout", Color.RED, Color.RED),
+    PLATEAU("Plateau", Color.MAGENTA, Color.MAGENTA),
+    PERSIST("Persist", Color.YELLOW, Color.YELLOW),
+    EDEMA("Edema", Color.GREEN, Color.GREEN),
+    FLUID("Fluid", Color.BLUE, Color.BLUE),
+    NOISE("Noise", Color.DARK_GRAY, Color.DARK_GRAY),
+    UNMAPPED("Unmapped", Color.ORANGE, Color.ORANGE);
 
     private final String description;
-    public final Color color;
+    public Color color;
+    private final Color defaultColor;
 
-    private KineticType(String s, Color c) {
+    private KineticType(String s, Color c, Color dc) {
         description = s;
         color = c;
+        defaultColor = dc;
     }
 
     @Override
     public String toString() {
         return this.description;
+    }
+
+    public Color getDefaultColor() {
+        return this.defaultColor;
     }
 
 }

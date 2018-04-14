@@ -5,16 +5,26 @@
  */
 package mip.data.image.mr;
 
+import ij.IJ;
+import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.StackStatistics;
+import java.awt.Color;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -34,9 +44,19 @@ import org.apache.commons.lang3.Range;
  */
 public class Kinetic {
 
-    private static final double RAPID_ENHANCE = 0.32;
-    private static final Range<Double> PLATEAU = Range.between(-0.10, 0.10);
-    private static final double GLANDULAR_NOISE_RATIO = 1.33;
+    private static double RAPID_ENHANCE = 0.32;
+    private static double DELAY_WASHOUT = -0.10;
+    private static double DELAY_PERSIST = 0.10;
+    private static boolean IS_SHOW_WASHOUT = true;
+    private static boolean IS_SHOW_PLATEAU = true;
+    private static boolean IS_SHOW_PERSIST = true;
+    private static boolean IS_SHOW_EDEMA = false;
+    private static boolean IS_SHOW_FLUID = false;
+    private static boolean IS_SHOW_GLANDULAR = false;
+    private static boolean IS_SHOW_NOISE = false;
+    private static boolean IS_SHOW_UNMAPPED = false;
+    private static Range<Double> PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
+    private static double GLANDULAR_NOISE_RATIO = 1.33;
     private static final Logger LOG = LogUtils.LOGGER;
 
     public static void main(String args[]) {
@@ -45,18 +65,19 @@ public class Kinetic {
         Kinetic k = new Kinetic(bmr, true);
         k.show();
     }
-    private final boolean EXIT_WHEN_WINDOW_CLOSED;
+    private final boolean EXIT_WHEN_WINDOW_CLOSED = false;
 
     public final BMRStudy bmrStudy;
     public final int width;
     public final int height;
     public final int size;
-    public final int glandular;
+    public int glandular;
+    public int noiseFloor;
     public boolean finished = false;
     public boolean mriBackground = true;
 
     public Kinetic(BMRStudy bmr) {
-        this(bmr, true);
+        this(bmr, false);
     }
 
     public Kinetic(BMRStudy bmr, boolean exitOnClosed) {
@@ -70,7 +91,7 @@ public class Kinetic {
                 ImageStack s = IJUtils.toImageStack(imgs);
                 StackStatistics ss = new StackStatistics(new ImagePlus("", s));
                 int count = 0;
-                int noiseFloor = 0;
+                noiseFloor = 0;
                 for (int i : ss.histogram16) {
                     count += i;
 
@@ -83,13 +104,20 @@ public class Kinetic {
                 glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
             }
         }
-        EXIT_WHEN_WINDOW_CLOSED = exitOnClosed;
     }
 
     public ImagePlus colorMapping(BitVolume bv) {
         int vWashout = 0;
         int vPlateau = 0;
         int vPersist = 0;
+        KineticType.FLUID.color = IS_SHOW_FLUID ? KineticType.FLUID.getDefaultColor() : null;
+        KineticType.EDEMA.color = IS_SHOW_EDEMA ? KineticType.EDEMA.getDefaultColor() : null;
+        KineticType.PLATEAU.color = IS_SHOW_PLATEAU ? KineticType.PLATEAU.getDefaultColor() : null;
+        KineticType.WASHOUT.color = IS_SHOW_WASHOUT ? KineticType.WASHOUT.getDefaultColor() : null;
+        KineticType.PERSIST.color = IS_SHOW_PERSIST ? KineticType.PERSIST.getDefaultColor() : null;
+        KineticType.GLAND.color = IS_SHOW_GLANDULAR ? KineticType.GLAND.getDefaultColor() : null;
+        KineticType.NOISE.color = IS_SHOW_NOISE ? KineticType.NOISE.getDefaultColor() : null;
+        KineticType.UNMAPPED.color = IS_SHOW_UNMAPPED ? KineticType.UNMAPPED.getDefaultColor() : null;
 
         ImageStack ims = new ImageStack(width, height);
         {
@@ -166,32 +194,72 @@ public class Kinetic {
         final short p = bmrStudy.getPixel(x, y, z, 1);
         final short d = bmrStudy.getPixel(x, y, z, 2);
         final String s = mapping(i, p, d).toString();
-        return String.format("%5s: %d,%d,%d=%d~%d~%d %s", sid, x, y, z, i, p, d, s);
+        return String.format("SID=[ %5s ] @ (%3d,%3d,%3d) : t0=[ %04d ], t1=[ %04d ], t2=[ %04d ] %8s", sid, x, y, z, i, p, d, s);
     }
 
     public void show() {
-        ImagePlus imp = colorMapping(null);
-        display(imp);
+        ImageJ ij = IJUtils.openImageJ();
+        MenuItem item = new MenuItem("Kinetic");
+        ij.getMenuBar().getMenu(5).add(item);
+        item.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                GenericDialog gd = new GenericDialog("Color Mapping");
+                gd.addCheckbox("Use MRI as background", mriBackground);
+                gd.addNumericField("Rapid Enhance: ", RAPID_ENHANCE, 2);
+                gd.addNumericField("Delay Washout: ", DELAY_WASHOUT, 2);
+                gd.addNumericField("Delay Persist: ", DELAY_PERSIST, 2);
+                gd.addNumericField("Glandular to noise ratio: ", GLANDULAR_NOISE_RATIO, 2);
+                gd.addCheckbox("Show washout", IS_SHOW_WASHOUT);
+                gd.addCheckbox("Show plateau", IS_SHOW_PLATEAU);
+                gd.addCheckbox("Show persist", IS_SHOW_PERSIST);
+                gd.addCheckbox("Show edema", IS_SHOW_EDEMA);
+                gd.addCheckbox("Show fluid", IS_SHOW_FLUID);
+                gd.addCheckbox("Show glandular", IS_SHOW_GLANDULAR);
+                gd.addCheckbox("Show noise", IS_SHOW_NOISE);
+                gd.addCheckbox("Show unmapped", IS_SHOW_UNMAPPED);
+                gd.showDialog();
+                if (gd.wasCanceled()) {
+                    return;
+                }
+                mriBackground = gd.getNextBoolean();
+                RAPID_ENHANCE = gd.getNextNumber();
+                DELAY_WASHOUT = gd.getNextNumber();
+                DELAY_PERSIST = gd.getNextNumber();
+                GLANDULAR_NOISE_RATIO = gd.getNextNumber();
+
+                PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
+                glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
+
+                IS_SHOW_WASHOUT = gd.getNextBoolean();
+                IS_SHOW_PLATEAU = gd.getNextBoolean();
+                IS_SHOW_PERSIST = gd.getNextBoolean();
+                IS_SHOW_EDEMA = gd.getNextBoolean();
+                IS_SHOW_FLUID = gd.getNextBoolean();
+                IS_SHOW_GLANDULAR = gd.getNextBoolean();
+                IS_SHOW_NOISE = gd.getNextBoolean();
+                IS_SHOW_UNMAPPED = gd.getNextBoolean();
+
+                display(colorMapping(null));
+            }
+        });
+
+        display(colorMapping(null));
     }
 
     private void display(ImagePlus i) {
-        IJUtils.openImageJ(true);
         i.show();
-        ImagePlus mip = bmrStudy.T1.mip();
-        mip.show();
         i.setPosition(size / 2);
 
         final ImageWindow iw = i.getWindow();
-        //iw.setResizable(false);
-        iw.setLocation(10 + 530, 10);
-        mip.getWindow().setLocation(10, 10);
+        iw.setAlwaysOnTop(true);
         iw.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent we) {
                 if (EXIT_WHEN_WINDOW_CLOSED) {
+                    System.err.println("...");
                     System.exit(0);
                 }
-                mip.getWindow().close();
                 System.gc();
                 synchronized (Kinetic.this) {
                     finished = true;
@@ -207,8 +275,41 @@ public class Kinetic {
                 final int Z = i.getCurrentSlice();
                 final int X = ic.getCursorLoc().x;
                 final int Y = ic.getCursorLoc().y;
-                i.setTitle(Kinetic.this.toString(X, Y, Z - 1));
+                IJ.showStatus(Kinetic.this.toString(X, Y, Z - 1));
                 super.mouseMoved(e);
+            }
+        });
+
+        ic.addMouseWheelListener(new MouseAdapter() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (e.isControlDown()) {
+                    Point loc = ic.getCursorLoc();
+                    if (!ic.cursorOverImage()) {
+                        Rectangle srcRect = ic.getSrcRect();
+                        loc.x = srcRect.x + srcRect.width / 2;
+                        loc.y = srcRect.y + srcRect.height / 2;
+                    }
+                    final int X = ic.screenX(loc.x);
+                    final int Y = ic.screenY(loc.y);
+                    if (e.getWheelRotation() > 0) {
+                        if (ic.getMagnification() > 1.0) {
+                            ic.zoomOut(X, Y);
+                        }
+                    } else {
+                        ic.zoomIn(X, Y);
+                    }
+                    i.setSlice(i.getCurrentSlice());
+                    e.consume();
+                } else {
+                    final int X = ic.getCursorLoc().x;
+                    final int Y = ic.getCursorLoc().y;
+                    int Z = i.getCurrentSlice();
+                    Z += e.getWheelRotation() > 0 ? 1 : -1;
+                    Z = Z > i.getNSlices() ? i.getNSlices() : Z < 1 ? 1 : Z;
+                    IJ.showStatus(Kinetic.this.toString(X, Y, Z - 1));
+                }
+                super.mouseWheelMoved(e);
             }
         });
 
@@ -224,8 +325,10 @@ public class Kinetic {
                     Point3d seed = new Point3d(X, Y, Z);
                     BitVolume voi = BitVolume.regionGrowing(Kinetic.this, seed);
                     if (voi != null) {
+                        boolean old = mriBackground;
+                        mriBackground = false;
                         ImagePlus imp = colorMapping(voi);
-                        imp.show();
+                        mriBackground = old;
                         {
                             List<Roi> rois = voi.getROIs();
                             String desc = ROIUtils.getDesc(rois);
@@ -238,11 +341,11 @@ public class Kinetic {
                             final String pn = bmrStudy.studyRoot + "/"
                                     + bmrStudy.getStudyID()
                                     + "_" + side + "_"
-                                    + desc + "_"
-                                    + String.format("seed(%d,%d,%d)", X, Y, Z);
+                                    + desc + "_" + imp.getTitle()
+                                    + String.format(".seed");
 
                             ROIUtils.saveVOI(rois, roiFile);
-                            //ROIUtils.showROI(roiFile, EXIT_WHEN_WINDOW_CLOSED);
+                            ROIUtils.showROI(roiFile, EXIT_WHEN_WINDOW_CLOSED);
 
                             File p = new File(pn);
                             try {
@@ -268,19 +371,35 @@ public class Kinetic {
     private KineticType mapping(int initial, int peak, int delay) {
         final double R1 = (peak - initial) / (double) initial;
         final double R2 = (delay - initial) / (double) initial - R1;
-        KineticType ret = KineticType.UNMAPPED;
+        KineticType ret = null;
         if (initial >= glandular) {
             if (R1 < -0.4) {
-                ret = PLATEAU.contains(R2) ? KineticType.FLUID : ret;
+                if (PLATEAU.contains(R2)) {
+                    ret = KineticType.FLUID;
+                } else {
+                    ret = KineticType.UNMAPPED;
+                }
             } else if (R1 < -0.2) {
-                ret = PLATEAU.contains(R2) ? KineticType.EDEMA : ret;
+                if (PLATEAU.contains(R2)) {
+                    ret = KineticType.EDEMA;
+                } else {
+                    ret = KineticType.UNMAPPED;
+                }
             } else if (R1 > RAPID_ENHANCE) {
-                ret = PLATEAU.contains(R2) ? KineticType.PLATEAU : ret;
-                ret = R2 < PLATEAU.getMinimum() ? KineticType.WASHOUT : ret;
-                ret = R2 > PLATEAU.getMaximum() ? KineticType.PERSIST : ret;
+                if (PLATEAU.contains(R2)) {
+                    ret = KineticType.PLATEAU;
+                } else if (R2 < PLATEAU.getMinimum()) {
+                    ret = KineticType.WASHOUT;
+                } else if (R2 > PLATEAU.getMaximum()) {
+                    ret = KineticType.PERSIST;
+                } else {
+                    throw new UnknownError();
+                }
             } else {
                 ret = KineticType.GLAND;
             }
+        } else {
+            ret = KineticType.NOISE;
         }
 
         return ret;
