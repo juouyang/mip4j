@@ -12,7 +12,7 @@ import java.awt.Color;
  * @author ju
  */
 public enum KineticType {
-    GLAND("Gland", Color.LIGHT_GRAY, Color.LIGHT_GRAY),
+    GLAND("High Enhancement", Color.LIGHT_GRAY, Color.LIGHT_GRAY),
     WASHOUT("Washout", Color.RED, Color.RED),
     PLATEAU("Plateau", Color.MAGENTA, Color.MAGENTA),
     PERSIST("Persist", Color.YELLOW, Color.YELLOW),

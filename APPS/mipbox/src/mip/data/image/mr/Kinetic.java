@@ -212,10 +212,10 @@ public class Kinetic {
                 gd.addNumericField("Glandular to noise ratio: ", GLANDULAR_NOISE_RATIO, 2);
                 gd.addCheckbox("Show washout", IS_SHOW_WASHOUT);
                 gd.addCheckbox("Show plateau", IS_SHOW_PLATEAU);
-                gd.addCheckbox("Show persist", IS_SHOW_PERSIST);
+                gd.addCheckbox("Show persistent", IS_SHOW_PERSIST);
                 gd.addCheckbox("Show edema", IS_SHOW_EDEMA);
                 gd.addCheckbox("Show fluid", IS_SHOW_FLUID);
-                gd.addCheckbox("Show glandular", IS_SHOW_GLANDULAR);
+                gd.addCheckbox("Show high enhancement", IS_SHOW_GLANDULAR);
                 gd.addCheckbox("Show noise", IS_SHOW_NOISE);
                 gd.addCheckbox("Show unmapped", IS_SHOW_UNMAPPED);
                 gd.showDialog();
