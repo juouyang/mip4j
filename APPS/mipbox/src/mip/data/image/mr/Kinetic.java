@@ -9,10 +9,12 @@ import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.Menus;
 import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.io.DirectoryChooser;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.StackStatistics;
@@ -44,20 +46,22 @@ import org.apache.commons.lang3.Range;
  */
 public class Kinetic {
 
-    private static double RAPID_ENHANCE = 0.32;
-    private static double DELAY_WASHOUT = -0.10;
-    private static double DELAY_PERSIST = 0.10;
-    private static boolean IS_SHOW_WASHOUT = true;
-    private static boolean IS_SHOW_PLATEAU = true;
-    private static boolean IS_SHOW_PERSIST = true;
-    private static boolean IS_SHOW_EDEMA = false;
-    private static boolean IS_SHOW_FLUID = false;
-    private static boolean IS_SHOW_GLANDULAR = false;
-    private static boolean IS_SHOW_NOISE = false;
-    private static boolean IS_SHOW_UNMAPPED = false;
-    private static Range<Double> PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
-    private static double GLANDULAR_NOISE_RATIO = 1.33;
     private static final Logger LOG = LogUtils.LOGGER;
+    private final boolean EXIT_WHEN_WINDOW_CLOSED = false;
+
+    private double RAPID_ENHANCE = 0.32;
+    private double DELAY_WASHOUT = -0.10;
+    private double DELAY_PERSIST = 0.10;
+    private boolean IS_SHOW_WASHOUT = true;
+    private boolean IS_SHOW_PLATEAU = true;
+    private boolean IS_SHOW_PERSIST = true;
+    private boolean IS_SHOW_EDEMA = false;
+    private boolean IS_SHOW_FLUID = false;
+    private boolean IS_SHOW_GLANDULAR = false;
+    private boolean IS_SHOW_NOISE = false;
+    private boolean IS_SHOW_UNMAPPED = false;
+    private Range<Double> PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
+    private double GLANDULAR_NOISE_RATIO = 1.33;
 
     public static void main(String args[]) {
         File studyRoot = new File(BMRStudy.SBMR);
@@ -65,7 +69,6 @@ public class Kinetic {
         Kinetic k = new Kinetic(bmr, true);
         k.show();
     }
-    private final boolean EXIT_WHEN_WINDOW_CLOSED = false;
 
     public final BMRStudy bmrStudy;
     public final int width;
@@ -103,6 +106,72 @@ public class Kinetic {
                 }
                 glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
             }
+        }
+        IJUtils.openImageJ(true);
+        {
+            MenuItem item = new MenuItem("Breast MRI Study");
+            Menus.getImageJMenu("File>Import").insert(item, 0);
+            Menus.getImageJMenu("File>Import").insertSeparator(1);
+            item.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    DirectoryChooser dc = new DirectoryChooser("Breast MRI Study");
+                    if (dc.getDirectory() == null) {
+                        return;
+                    }
+                    File studyRoot = new File(dc.getDirectory());
+                    BMRStudy bmr = new BMRStudy(studyRoot.toPath());
+                    Kinetic k = new Kinetic(bmr, true);
+                    k.show();
+                }
+            });
+        }
+        {
+            MenuItem item = new MenuItem("Kinetic");
+            Menus.getImageJMenu("Plugins").addSeparator();
+            Menus.getImageJMenu("Plugins").add(item);
+            item.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    GenericDialog gd = new GenericDialog("Color Mapping");
+                    gd.addCheckbox("Use MRI as background", mriBackground);
+                    gd.addNumericField("Rapid Enhance: ", RAPID_ENHANCE, 2);
+                    gd.addNumericField("Delay Washout: ", DELAY_WASHOUT, 2);
+                    gd.addNumericField("Delay Persist: ", DELAY_PERSIST, 2);
+                    gd.addNumericField("Glandular to noise ratio: ", GLANDULAR_NOISE_RATIO, 2);
+                    gd.addCheckbox("Show washout", IS_SHOW_WASHOUT);
+                    gd.addCheckbox("Show plateau", IS_SHOW_PLATEAU);
+                    gd.addCheckbox("Show persistent", IS_SHOW_PERSIST);
+                    gd.addCheckbox("Show edema", IS_SHOW_EDEMA);
+                    gd.addCheckbox("Show fluid", IS_SHOW_FLUID);
+                    gd.addCheckbox("Show high enhancement", IS_SHOW_GLANDULAR);
+                    gd.addCheckbox("Show noise", IS_SHOW_NOISE);
+                    gd.addCheckbox("Show unmapped", IS_SHOW_UNMAPPED);
+                    gd.showDialog();
+                    if (gd.wasCanceled()) {
+                        return;
+                    }
+                    mriBackground = gd.getNextBoolean();
+                    RAPID_ENHANCE = gd.getNextNumber();
+                    DELAY_WASHOUT = gd.getNextNumber();
+                    DELAY_PERSIST = gd.getNextNumber();
+                    GLANDULAR_NOISE_RATIO = gd.getNextNumber();
+
+                    PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
+                    glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
+
+                    IS_SHOW_WASHOUT = gd.getNextBoolean();
+                    IS_SHOW_PLATEAU = gd.getNextBoolean();
+                    IS_SHOW_PERSIST = gd.getNextBoolean();
+                    IS_SHOW_EDEMA = gd.getNextBoolean();
+                    IS_SHOW_FLUID = gd.getNextBoolean();
+                    IS_SHOW_GLANDULAR = gd.getNextBoolean();
+                    IS_SHOW_NOISE = gd.getNextBoolean();
+                    IS_SHOW_UNMAPPED = gd.getNextBoolean();
+
+                    display(colorMapping(null));
+                }
+            });
         }
     }
 
@@ -174,7 +243,7 @@ public class Kinetic {
             }
         }
 
-        String title = "";
+        String title = getTitle();
         {
             if (bv != null) {
                 final int v = vWashout + vPlateau + vPersist;
@@ -188,6 +257,22 @@ public class Kinetic {
         return new ImagePlus(title, ims);
     }
 
+    public String getTitle() {
+        final StringBuffer sb = new StringBuffer();
+
+        sb.append(bmrStudy.getStudyID());
+        sb.append("_");
+        sb.append(RAPID_ENHANCE);
+        sb.append("_");
+        sb.append(DELAY_WASHOUT);
+        sb.append("_");
+        sb.append(DELAY_PERSIST);
+        sb.append("_");
+        sb.append(GLANDULAR_NOISE_RATIO);
+
+        return sb.toString();
+    }
+
     public String toString(int x, int y, int z) {
         final String sid = bmrStudy.getStudyID();
         final short i = bmrStudy.getPixel(x, y, z, 0);
@@ -198,52 +283,6 @@ public class Kinetic {
     }
 
     public void show() {
-        ImageJ ij = IJUtils.openImageJ();
-        MenuItem item = new MenuItem("Kinetic");
-        ij.getMenuBar().getMenu(5).add(item);
-        item.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                GenericDialog gd = new GenericDialog("Color Mapping");
-                gd.addCheckbox("Use MRI as background", mriBackground);
-                gd.addNumericField("Rapid Enhance: ", RAPID_ENHANCE, 2);
-                gd.addNumericField("Delay Washout: ", DELAY_WASHOUT, 2);
-                gd.addNumericField("Delay Persist: ", DELAY_PERSIST, 2);
-                gd.addNumericField("Glandular to noise ratio: ", GLANDULAR_NOISE_RATIO, 2);
-                gd.addCheckbox("Show washout", IS_SHOW_WASHOUT);
-                gd.addCheckbox("Show plateau", IS_SHOW_PLATEAU);
-                gd.addCheckbox("Show persistent", IS_SHOW_PERSIST);
-                gd.addCheckbox("Show edema", IS_SHOW_EDEMA);
-                gd.addCheckbox("Show fluid", IS_SHOW_FLUID);
-                gd.addCheckbox("Show high enhancement", IS_SHOW_GLANDULAR);
-                gd.addCheckbox("Show noise", IS_SHOW_NOISE);
-                gd.addCheckbox("Show unmapped", IS_SHOW_UNMAPPED);
-                gd.showDialog();
-                if (gd.wasCanceled()) {
-                    return;
-                }
-                mriBackground = gd.getNextBoolean();
-                RAPID_ENHANCE = gd.getNextNumber();
-                DELAY_WASHOUT = gd.getNextNumber();
-                DELAY_PERSIST = gd.getNextNumber();
-                GLANDULAR_NOISE_RATIO = gd.getNextNumber();
-
-                PLATEAU = Range.between(DELAY_WASHOUT, DELAY_PERSIST);
-                glandular = (int) (noiseFloor * GLANDULAR_NOISE_RATIO);
-
-                IS_SHOW_WASHOUT = gd.getNextBoolean();
-                IS_SHOW_PLATEAU = gd.getNextBoolean();
-                IS_SHOW_PERSIST = gd.getNextBoolean();
-                IS_SHOW_EDEMA = gd.getNextBoolean();
-                IS_SHOW_FLUID = gd.getNextBoolean();
-                IS_SHOW_GLANDULAR = gd.getNextBoolean();
-                IS_SHOW_NOISE = gd.getNextBoolean();
-                IS_SHOW_UNMAPPED = gd.getNextBoolean();
-
-                display(colorMapping(null));
-            }
-        });
-
         display(colorMapping(null));
     }
 
