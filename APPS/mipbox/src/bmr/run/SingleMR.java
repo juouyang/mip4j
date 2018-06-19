@@ -17,13 +17,9 @@ import mip.data.image.mr.Kinetic;
 public class SingleMR {
 
     public static void main(String[] args) throws IOException {
-        final File studyRoot;
-        if (args.length == 1) {
-            studyRoot = new File(args[0]);
-        } else {
-            studyRoot = new File(BMRStudy.SBMR);
-        }
-        final Kinetic k = new Kinetic(new BMRStudy(studyRoot.toPath()));
+        final File studyRoot = (args.length == 1) ? new File(args[0]) : new File(BMRStudy.SBMR);
+        final BMRStudy mbr = new BMRStudy(studyRoot.toPath());
+        final Kinetic k = new Kinetic(mbr);
         k.show();
     }
 }

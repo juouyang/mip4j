@@ -65,7 +65,7 @@ public class ROIUtils {
         final int h = Y2 - Y1;
         final int l = maxZ - minZ;
         //DBG.accept(minZ + "\t" + maxZ + "\t" + X1 + "\t" + Y1 + "\t" + X2 + "\t" + Y2 + "\n");
-        return String.format("%03d-%03d_%03dX%03dX%03d", minZ, maxZ, w, h, l);
+        return String.format("#%03d-#%03d_%03dx%03dx%03d", minZ, maxZ, w, h, l);
     }
 
     public static void saveVOI(List<Roi> voi, String zipFile) {
