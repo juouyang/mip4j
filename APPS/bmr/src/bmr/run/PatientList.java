@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import mip.data.image.mr.MROpener;
 import mip.util.IOUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -24,17 +25,13 @@ public class PatientList {
         System.out.println(args[0]);
 
         for (Path fn : IOUtils.listFiles(args[0])) {
-            try {
-                Path studyRoot = fn.getParent().getParent(); // STUDY > SERIES > IMAGE
-                if (!studies.contains(studyRoot)) {
-                    studies.add(studyRoot);
-                    MR mr = new MR(fn);
-                    Path hospital = studyRoot.getParent().getFileName();
-                    table.put(hospital + "\t" + mr.getStudyID() + "\t" + mr.getStudyDate(), mr.getPatientID());
+            Path studyRoot = fn.getParent().getParent(); // STUDY > SERIES > IMAGE
+            if (!studies.contains(studyRoot)) {
+                studies.add(studyRoot);
+                MR mr = MROpener.openMR(fn);
+                Path hospital = studyRoot.getParent().getFileName();
+                table.put(hospital + "\t" + mr.getStudyID() + "\t" + mr.getStudyDate(), mr.getPatientID());
 
-                }
-            } catch (IOException ex) {
-                System.err.println(ex);
             }
         }
 
