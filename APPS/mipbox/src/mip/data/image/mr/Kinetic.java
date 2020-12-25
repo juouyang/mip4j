@@ -331,7 +331,7 @@ public class Kinetic {
                     }
                     final int X = ic.screenX(loc.x);
                     final int Y = ic.screenY(loc.y);
-                    if (e.getWheelRotation() > 0) {
+                    if (e.getWheelRotation() < 0) {
                         if (ic.getMagnification() > 1.0) {
                             ic.zoomOut(X, Y);
                         }
@@ -346,6 +346,7 @@ public class Kinetic {
                     int Z = i.getCurrentSlice();
                     Z += e.getWheelRotation() > 0 ? 1 : -1;
                     Z = Z > i.getNSlices() ? i.getNSlices() : Z < 1 ? 1 : Z;
+                    i.setSlice(Z);
                     IJ.showStatus(Kinetic.this.toString(X, Y, Z - 1));
                 }
                 super.mouseWheelMoved(e);
